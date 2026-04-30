@@ -237,3 +237,34 @@ subjects:
   - kind: ServiceAccount
     name: claude
     namespace: claude
+---
+# Minimal role for restarting pods only — no secrets, no exec, no scale.
+# Used for namespaces where the operator owns everything except
+# occasional pod-level recycling (e.g. tailscale operator-managed
+# proxy pods that wedge into magicsock derp/STUN flap state).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: claude-pod-restart
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+---
+# Grant pod-restart access in tailscale namespace. Allows recycling
+# wedged ts-* proxy pods (derp-route thrash, STUN endpoint flap)
+# without needing Douglas. Operator recreates from declared spec, so
+# this can't bypass GitOps. See zuzak/claude#533, #534.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-pod-restart
+  namespace: tailscale
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-pod-restart
+subjects:
+  - kind: ServiceAccount
+    name: claude
+    namespace: claude
