@@ -242,6 +242,8 @@ subjects:
 # Used for namespaces where the operator owns everything except
 # occasional pod-level recycling (e.g. tailscale operator-managed
 # proxy pods that wedge into magicsock derp/STUN flap state).
+# WARNING: bind via RoleBinding (namespace-scoped), not ClusterRoleBinding.
+# A ClusterRoleBinding would grant pods/delete across all namespaces.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
