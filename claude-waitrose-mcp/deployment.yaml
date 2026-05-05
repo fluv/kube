@@ -47,6 +47,9 @@ spec:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 30
+          envFrom:
+            - secretRef:
+                name: waitrose-credentials
           resources:
             requests:
               cpu: 10m
