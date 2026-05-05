@@ -50,6 +50,7 @@ spec:
           envFrom:
             - secretRef:
                 name: waitrose-credentials
+                optional: true
           resources:
             requests:
               cpu: 10m
