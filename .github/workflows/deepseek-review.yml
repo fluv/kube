@@ -2,6 +2,8 @@ name: DeepSeek Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
 permissions:
   contents: read
   pull-requests: write
@@ -9,99 +11,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: zuzak/deepseek-review-action@v1
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Generate patch
-        run: |
-          git diff -U99999 origin/${{ github.base_ref }}...HEAD -- \
-            ':!dot-claude/projects/**' \
-            > /tmp/review.patch
-
-      - name: Skip if empty or oversized
-        id: check
-        run: |
-          if [ ! -s /tmp/review.patch ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-          if [ $(wc -c < /tmp/review.patch) -gt 200000 ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build prompt
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          cat .github/deepseek/*.md > /tmp/prompt.md
-          {
-            echo
-            echo '## Patch'
-            echo '```diff'
-            cat /tmp/review.patch
-            echo '```'
-          } >> /tmp/prompt.md
-
-      - name: Call DeepSeek
-        if: steps.check.outputs.skip != 'true'
-        env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: |
-          jq -n --rawfile content /tmp/prompt.md '{
-            model: "deepseek-reasoner",
-            messages: [{role: "user", content: $content}]
-          }' > /tmp/request.json
-
-          curl -sS https://api.deepseek.com/chat/completions \
-            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
-            -H "Content-Type: application/json" \
-             --max-time 120 \
-             --connect-timeout 10 \
-            -d @/tmp/request.json \
-            > /tmp/response.json
-
-      - name: Build review comment
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          if ! jq -e . /tmp/response.json > /dev/null 2>&1; then
-            {
-              echo "DeepSeek API error (invalid JSON response):"
-              cat /tmp/response.json
-            } > /tmp/review.md
-          elif jq -e '.choices[0].message.content' /tmp/response.json > /dev/null 2>&1; then
-            MODEL=$(jq -r '.model' /tmp/response.json)
-            {
-              jq -r '.choices[0].message.content' /tmp/response.json
-              echo
-              echo "_Reviewed by $MODEL, working only from the .diff_"
-            } > /tmp/review.md
-          else
-            {
-              echo "DeepSeek API error:"
-              jq -r '.error.message // "unknown error"' /tmp/response.json
-            } > /tmp/review.md
-          fi
-
-      - name: Show response
-        if: always() && steps.check.outputs.skip != 'true'
-        run: |
-          echo "::group::DeepSeek raw response"
-          jq . /tmp/response.json 2>/dev/null || cat /tmp/response.json
-          echo "::endgroup::"
-
-      - name: Upload reasoning trace
-        if: always() && steps.check.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: deepseek-response-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
-          path: /tmp/response.json
-          retention-days: 30
-
-      - name: Post comment
-        if: steps.check.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --body-file /tmp/review.md
+          deepseek-api-key: ${{ secrets.DEEPSEEK_API_KEY }}
+          label-deadlock: vet:deadlock
