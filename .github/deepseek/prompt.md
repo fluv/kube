@@ -51,6 +51,10 @@ and any other relevant criteria not listed.
 If you add additional criteria, mention it in the output and state
 whether you believe it would be a useful addition to this prompt.
 
+## Repository contents at HEAD
+
+{{REPO_CONTENTS}}
+
 ## Formatting
 You must always start your output with the following.
 Replace the contents in square brackets with appropriate values.
