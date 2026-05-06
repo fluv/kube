@@ -5,6 +5,7 @@ metadata:
   namespace: barcodebuddy
   annotations:
     tailscale.com/hostname: barcodebuddy
+    tailscale.com/proxy-class: spread-across-nodes
 spec:
   ingressClassName: tailscale
   tls:

@@ -35,6 +35,8 @@ spec:
             tls: true
             ingressClassName: tailscale
             host: longhorn.gentoo-mine.ts.net
+            annotations:
+              tailscale.com/proxy-class: spread-across-nodes
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
