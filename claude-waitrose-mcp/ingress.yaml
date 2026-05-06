@@ -5,28 +5,20 @@ metadata:
   namespace: claude-waitrose-mcp
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-production
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
     # Streamable HTTP MCP needs chunked responses unbuffered and longer
     # read/write timeouts. Same pattern as claude-vestibule and claude-grocy.
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-    # Rate limiting: unauthenticated endpoint proxying requests to waitrose.com.
-    # 60 rpm is well above normal claude.ai usage (a few lookups per minute);
-    # limits blast radius if the URL is ever accidentally discovered/shared.
-    # limit-connections caps SSE stream concurrency — claude.ai opens a few
-    # concurrent GET streams per session.
-    nginx.ingress.kubernetes.io/limit-rpm: "60"
-    nginx.ingress.kubernetes.io/limit-connections: "10"
 spec:
   ingressClassName: nginx
   rules:
     - host: waitrose.mcp.k3s.fluv.net
       http:
         paths:
-          # /mcp and /healthz are the public surface. The MCP server also
-          # exposes "/" for a JSON banner, but keeping the ingress narrow
-          # mirrors claude-vestibule — /healthz is exposed so acceptance
-          # checks and probes outside the cluster can verify the pod.
           - path: /mcp
             pathType: Prefix
             backend:

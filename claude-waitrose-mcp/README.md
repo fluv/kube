@@ -2,27 +2,65 @@
 
 Namespace hosting a single service:
 
-- **waitrose-mcp** — public-facing MCP server exposing Waitrose product
-  search (anonymous). Source in [zuzak/waitrose-mcp](https://github.com/zuzak/waitrose-mcp).
+- **waitrose-mcp** — MCP server exposing Waitrose product search and
+  (once credentials are supplied) authenticated tools. Source in
+  [zuzak/waitrose-mcp](https://github.com/zuzak/waitrose-mcp).
 
 Tools exposed: `search_products`, `browse_products`,
-`get_products_by_line_numbers`, `get_promotion_products`. All anonymous —
-the upstream API accepts an `Authorization: Bearer unauthenticated` token
-for product browsing without login.
+`get_products_by_line_numbers`, `get_promotion_products`. Authenticated
+tools (trolley, orders, slots) activate automatically when the server logs
+in via `WAITROSE_USERNAME` / `WAITROSE_PASSWORD` at startup.
 
-## Auth extension point
+## Ingress auth
 
-Authenticated tools (trolley, orders, slots) are not yet implemented. When
-added, the pattern is: set `WAITROSE_USERNAME` and `WAITROSE_PASSWORD` as
-a Secret-backed env pair on the Deployment, and the server will log in at
-startup and enable the authenticated tools. See the server README for the
-extension point.
+The ingress uses nginx basic-auth (matching `claude-grocy` and
+`claude-vestibule`). All paths — including `/healthz` — require credentials.
+Kubernetes readiness/liveness probes are unaffected because they hit the pod
+directly via the service IP, not through the ingress.
 
-## No ingress basic auth
+## Secrets (created out-of-band by Douglas)
 
-Unlike `claude-grocy` and `claude-vestibule`, this ingress is unauthenticated
-— the upstream Waitrose data is public, and there is no write surface to
-gate. Leave the `nginx.ingress.kubernetes.io/auth-*` annotations off.
+Two Secrets in the `claude-waitrose-mcp` namespace. Neither is committed to
+this repo.
+
+**`basic-auth`** — nginx ingress credential:
+
+```bash
+htpasswd -c -B /tmp/claude/auth claude
+# enter the desired password at the prompt
+kubectl -n claude-waitrose-mcp create secret generic basic-auth \
+  --from-file=auth=/tmp/claude/auth
+rm /tmp/claude/auth
+```
+
+After creation, update the saved credentials in the claude.ai MCP
+integrations console for the Waitrose connector.
+
+**`waitrose-credentials`** — Waitrose account for authenticated tools:
+
+```bash
+kubectl -n claude-waitrose-mcp create secret generic waitrose-credentials \
+  --from-literal=WAITROSE_USERNAME='<email>' \
+  --from-literal=WAITROSE_PASSWORD='<password>'
+```
+
+The pod picks these up via `envFrom` and logs in at startup. Pod logs will
+show `[INIT] Authenticated as <email>` on success.
+
+## Lock-out recovery
+
+If the `basic-auth` Secret is missing or misconfigured and you can't reach
+the MCP, temporarily remove the auth annotations from the live ingress:
+
+```bash
+kubectl -n claude-waitrose-mcp annotate ingress waitrose-mcp \
+  nginx.ingress.kubernetes.io/auth-type- \
+  nginx.ingress.kubernetes.io/auth-secret- \
+  nginx.ingress.kubernetes.io/auth-realm-
+```
+
+Pause Argo CD auto-sync on the Application first — otherwise it re-applies
+the annotations within a minute.
 
 ## Prerequisites before this app will run
 
