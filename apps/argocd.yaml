@@ -53,6 +53,7 @@ spec:
             ingressClassName: tailscale
             annotations:
               tailscale.com/hostname: argocd
+              tailscale.com/proxy-class: spread-across-nodes
             hosts:
               - argocd
             tls:

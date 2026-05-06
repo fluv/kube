@@ -5,6 +5,7 @@ metadata:
   namespace: grocy
   annotations:
     tailscale.com/hostname: grocy
+    tailscale.com/proxy-class: spread-across-nodes
 spec:
   ingressClassName: tailscale
   tls:

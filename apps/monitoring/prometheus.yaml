@@ -33,6 +33,8 @@ spec:
             tls:
               - hosts:
                   - prometheus.gentoo-mine.ts.net
+            annotations:
+              tailscale.com/proxy-class: spread-across-nodes
           prometheusSpec:
             replicas: 1
             priorityClassName: cluster-low

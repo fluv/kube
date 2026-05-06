@@ -50,6 +50,7 @@ spec:
           ingressClassName: tailscale
           annotations:
             tailscale.com/hostname: grafana
+            tailscale.com/proxy-class: spread-across-nodes
           hosts:
             - grafana
           tls:
