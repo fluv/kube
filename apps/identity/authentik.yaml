@@ -9,6 +9,9 @@ spec:
     namespace: authentik
   project: identity
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - RespectIgnoreDifferences=true
   ignoreDifferences:
