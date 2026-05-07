@@ -24,7 +24,7 @@ data:
     from http.server import BaseHTTPRequestHandler, HTTPServer
     from threading import Lock, Thread
 
-    PORT = int(os.environ.get('AWAIR_EXPORTER_PORT', '9092'))
+    PORT = int(os.environ.get('AWAIR_EXPORTER_PORT', '9092').rsplit(':', 1)[-1])
     POLL_INTERVAL = 30
     REDISCOVER_INTERVAL = 600
     SUBNET_PREFIX = os.environ.get('AWAIR_SUBNET_PREFIX', '192.168.1.')
