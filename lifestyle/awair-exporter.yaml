@@ -248,6 +248,15 @@ spec:
             name: awair-exporter
             defaultMode: 0755
       priorityClassName: cluster-low
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - pi.home.arpa
 ---
 apiVersion: v1
 kind: Service
