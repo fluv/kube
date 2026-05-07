@@ -6,88 +6,172 @@ metadata:
 data:
   awair-exporter.py: |
     #!/usr/bin/env python3
-    """Prometheus exporter for Awair Element air quality monitors."""
+    """Prometheus exporter for Awair Element air quality monitors.
+
+    Discovers devices by device_uuid (stable across DHCP changes) via a
+    parallel subnet scan at startup and every REDISCOVER_INTERVAL seconds.
+    Polls /air-data/latest every POLL_INTERVAL seconds and serves metrics on
+    :9092.
+    """
     import json
     import math
     import os
     import sys
     import time
     import urllib.request
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     from http.server import BaseHTTPRequestHandler, HTTPServer
     from threading import Lock, Thread
 
     PORT = int(os.environ.get('AWAIR_EXPORTER_PORT', '9092'))
     POLL_INTERVAL = 30
+    REDISCOVER_INTERVAL = 600
+    SUBNET_PREFIX = os.environ.get('AWAIR_SUBNET_PREFIX', '192.168.1.')
+    SCAN_WORKERS = 50
+    SCAN_TIMEOUT = 1.5
 
-    DEVICES = {
-        '192.168.1.56':  {'location': 'study',   'device_uuid': 'awair-element_34117'},
-        '192.168.1.52':  {'location': 'lounge',  'device_uuid': 'awair-element_57196'},
-        '192.168.1.184': {'location': 'bedroom', 'device_uuid': 'awair-element_15279'},
+    # Maps device_uuid (stable) -> location label
+    DEVICE_LOCATIONS = {
+        'awair-element_34117': 'study',
+        'awair-element_57196': 'lounge',
+        'awair-element_15279': 'bedroom',
     }
 
+    # Maps API field -> (metric_name, help_text)
     METRIC_MAP = {
-        'score':     ('awair_score',              'Awair air quality score (0-100)'),
-        'temp':      ('awair_temperature_celsius', 'Temperature in degrees Celsius'),
-        'humid':     ('awair_humidity_percent',    'Relative humidity percentage'),
-        'abs_humid': ('awair_abs_humidity_gm3',    'Absolute humidity in grams per cubic metre'),
-        'co2':       ('awair_co2_ppm',             'CO2 concentration in parts per million'),
-        'voc':       ('awair_voc_ppb',             'VOC concentration in parts per billion'),
-        'pm25':      ('awair_pm25_ugm3',           'PM2.5 concentration in micrograms per cubic metre'),
-        'pm10_est':  ('awair_pm10_est_ugm3',       'Estimated PM10 concentration in micrograms per cubic metre'),
-        'dew_point': ('awair_dew_point_celsius',   'Dew point in degrees Celsius'),
+        'score':            ('awair_score',             'Awair Score (0-100)'),
+        'temp':             ('awair_temperature_celsius', 'Dry bulb temperature (C)'),
+        'humid':            ('awair_humidity_percent',  'Relative Humidity (%)'),
+        'abs_humid':        ('awair_abs_humidity_gm3',  'Absolute Humidity (g/m3)'),
+        'dew_point':        ('awair_dew_point_celsius', 'Dew point temperature (C)'),
+        'co2':              ('awair_co2_ppm',           'CO2 (ppm)'),
+        'co2_est':          ('awair_co2_est_ppm',       'Estimated CO2 from TVOC sensor (ppm)'),
+        'co2_est_baseline': ('awair_co2_est_baseline',  'TVOC sensor CO2 baseline (unitless)'),
+        'voc':              ('awair_voc_ppb',           'Total Volatile Organic Compounds (ppb)'),
+        'voc_baseline':     ('awair_voc_baseline',      'TVOC sensor VOC baseline (unitless)'),
+        'voc_h2_raw':       ('awair_voc_h2_raw',        'TVOC sensor H2 signal (unitless)'),
+        'voc_ethanol_raw':  ('awair_voc_ethanol_raw',   'TVOC sensor ethanol signal (unitless)'),
+        'pm25':             ('awair_pm25_ugm3',         'PM2.5 particulate matter (ug/m3)'),
+        'pm10_est':         ('awair_pm10_est_ugm3',     'Estimated PM10 particulate matter (ug/m3)'),
     }
 
     _lock = Lock()
-    _data: dict = {}
+    # device_uuid -> {'ip': str, 'location': str}
+    _device_map: dict = {}
+    # device_uuid -> (fetched_at: float, readings: dict | None)
+    _readings: dict = {}
 
-    def poll_device(ip):
+
+    def probe_config(ip: str):
+        """Return (device_uuid, wifi_mac) if ip is an Awair, else None."""
+        url = f'http://{ip}/settings/config/data'
+        try:
+            with urllib.request.urlopen(url, timeout=SCAN_TIMEOUT) as resp:
+                data = json.loads(resp.read())
+            uuid = data.get('device_uuid')
+            mac = data.get('wifi_mac', '')
+            if uuid:
+                return uuid, mac
+        except Exception:
+            pass
+        return None
+
+
+    def discover():
+        """Scan subnet, return {device_uuid: ip} for known devices."""
+        ips = [f'{SUBNET_PREFIX}{i}' for i in range(1, 255)]
+        found = {}
+
+        def check(ip):
+            result = probe_config(ip)
+            if result:
+                uuid, _ = result
+                if uuid in DEVICE_LOCATIONS:
+                    return uuid, ip
+            return None
+
+        with ThreadPoolExecutor(max_workers=SCAN_WORKERS) as pool:
+            for future in as_completed({pool.submit(check, ip): ip for ip in ips}):
+                r = future.result()
+                if r:
+                    uuid, ip = r
+                    found[uuid] = ip
+
+        return found
+
+
+    def discover_loop():
+        while True:
+            print('awair-exporter: scanning subnet for devices...', file=sys.stderr, flush=True)
+            found = discover()
+            new_map = {}
+            for uuid, location in DEVICE_LOCATIONS.items():
+                ip = found.get(uuid)
+                if ip:
+                    new_map[uuid] = {'ip': ip, 'location': location}
+                    print(f'awair-exporter: {uuid} ({location}) -> {ip}', file=sys.stderr, flush=True)
+                else:
+                    print(f'awair-exporter: {uuid} ({location}) not found on subnet', file=sys.stderr, flush=True)
+            with _lock:
+                _device_map.clear()
+                _device_map.update(new_map)
+            time.sleep(REDISCOVER_INTERVAL)
+
+
+    def poll_device(uuid, ip):
         url = f'http://{ip}/air-data/latest'
         try:
             with urllib.request.urlopen(url, timeout=5) as resp:
-                readings = json.loads(resp.read())
+                data = json.loads(resp.read())
             with _lock:
-                _data[ip] = (time.time(), readings)
+                _readings[uuid] = (time.time(), data)
         except Exception as e:
-            print(f'awair-exporter: poll {ip}: {e}', file=sys.stderr, flush=True)
+            print(f'awair-exporter: poll {uuid} ({ip}): {e}', file=sys.stderr, flush=True)
             with _lock:
-                _data[ip] = (time.time(), None)
+                _readings[uuid] = (time.time(), None)
+
 
     def poll_loop():
         while True:
-            for ip in DEVICES:
-                poll_device(ip)
+            with _lock:
+                targets = {uuid: info['ip'] for uuid, info in _device_map.items()}
+            for uuid, ip in targets.items():
+                poll_device(uuid, ip)
             time.sleep(POLL_INTERVAL)
+
 
     def render_metrics():
         with _lock:
-            snapshot = dict(_data)
+            readings_snap = dict(_readings)
+
         lines = []
         now = time.time()
 
-        lines.append('# HELP awair_up 1 if the device responded to the last poll, 0 otherwise')
+        lines.append('# HELP awair_up 1 if device responded to the last poll, 0 otherwise')
         lines.append('# TYPE awair_up gauge')
-        for ip, meta in DEVICES.items():
-            fetched_at, readings = snapshot.get(ip, (None, None))
+        for uuid, location in DEVICE_LOCATIONS.items():
+            fetched_at, data = readings_snap.get(uuid, (None, None))
             stale = fetched_at is None or (now - fetched_at) > POLL_INTERVAL * 3
-            up = 0 if (readings is None or stale) else 1
-            lbl = f'location="{meta["location"]}",device_uuid="{meta["device_uuid"]}"'
+            up = 0 if (data is None or stale) else 1
+            lbl = f'location="{location}",device_uuid="{uuid}"'
             lines.append(f'awair_up{{{lbl}}} {up}')
 
         for api_key, (metric_name, help_text) in METRIC_MAP.items():
             lines.append(f'# HELP {metric_name} {help_text}')
             lines.append(f'# TYPE {metric_name} gauge')
-            for ip, meta in DEVICES.items():
-                _, readings = snapshot.get(ip, (None, None))
-                if readings is None:
+            for uuid, location in DEVICE_LOCATIONS.items():
+                _, data = readings_snap.get(uuid, (None, None))
+                if data is None:
                     continue
-                val = readings.get(api_key)
+                val = data.get(api_key)
                 if val is None or not isinstance(val, (int, float)) or not math.isfinite(val):
                     continue
-                lbl = f'location="{meta["location"]}",device_uuid="{meta["device_uuid"]}"'
+                lbl = f'location="{location}",device_uuid="{uuid}"'
                 lines.append(f'{metric_name}{{{lbl}}} {val}')
 
         lines.append('')
         return '\n'.join(lines)
+
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -111,6 +195,8 @@ data:
             pass
 
     if __name__ == '__main__':
+        Thread(target=discover_loop, daemon=True).start()
+        time.sleep(2)  # first discovery pass before poll loop starts
         Thread(target=poll_loop, daemon=True).start()
         server = HTTPServer(('', PORT), Handler)
         print(f'awair-exporter listening on :{PORT}', flush=True)
@@ -138,6 +224,9 @@ spec:
           ports:
             - name: metrics
               containerPort: 9092
+          env:
+            - name: AWAIR_SUBNET_PREFIX
+              value: "192.168.1."
           volumeMounts:
             - name: scripts
               mountPath: /scripts
@@ -151,7 +240,7 @@ spec:
             httpGet:
               path: /metrics
               port: metrics
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30
       volumes:
         - name: scripts
