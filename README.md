@@ -85,6 +85,16 @@ Loki PVC headroom, stalled ingest, dropped write bytes, and per-node Alloy
 coverage. All logging components run at `cluster-low` priority so they yield
 to end-user workloads under memory pressure on `saraneth`.
 
+A second, independent **Lifestyle Prometheus** instance runs in the `lifestyle`
+namespace and scrapes personal (non-cluster) metrics. Current scrapers:
+
+- **Awair Element air quality** — three Awair Element monitors (bedroom, lounge,
+  study) polled via their local HTTP API, exposing CO₂, VOC, PM2.5, temperature,
+  humidity, and the Awair score. The exporter runs with `hostNetwork: true` on
+  the Pi to reach devices on the home LAN.
+- **Grocy** — home inventory and meal-planning metrics from the `claude-grocy`
+  namespace.
+
 ## End-user services
 
 We&rsquo;re running a single-user [**Mastodon**](https://joinmastodon.org/) instance on
