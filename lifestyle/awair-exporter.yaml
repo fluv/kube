@@ -1,3 +1,4 @@
+# Floating image tag (python:3.12-slim) tracked for pinning in #242.
 apiVersion: v1
 kind: ConfigMap
 metadata:
