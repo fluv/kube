@@ -1,0 +1,196 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: awair-exporter
+  namespace: lifestyle
+data:
+  awair-exporter.py: |
+    #!/usr/bin/env python3
+    """Prometheus exporter for Awair Element air quality monitors."""
+    import json
+    import math
+    import os
+    import sys
+    import time
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from threading import Lock, Thread
+
+    PORT = int(os.environ.get('AWAIR_EXPORTER_PORT', '9092'))
+    POLL_INTERVAL = 30
+
+    DEVICES = {
+        '192.168.1.56':  {'location': 'study',   'device_uuid': 'awair-element_34117'},
+        '192.168.1.52':  {'location': 'lounge',  'device_uuid': 'awair-element_57196'},
+        '192.168.1.184': {'location': 'bedroom', 'device_uuid': 'awair-element_15279'},
+    }
+
+    METRIC_MAP = {
+        'score':     ('awair_score',              'Awair air quality score (0-100)'),
+        'temp':      ('awair_temperature_celsius', 'Temperature in degrees Celsius'),
+        'humid':     ('awair_humidity_percent',    'Relative humidity percentage'),
+        'abs_humid': ('awair_abs_humidity_gm3',    'Absolute humidity in grams per cubic metre'),
+        'co2':       ('awair_co2_ppm',             'CO2 concentration in parts per million'),
+        'voc':       ('awair_voc_ppb',             'VOC concentration in parts per billion'),
+        'pm25':      ('awair_pm25_ugm3',           'PM2.5 concentration in micrograms per cubic metre'),
+        'pm10_est':  ('awair_pm10_est_ugm3',       'Estimated PM10 concentration in micrograms per cubic metre'),
+        'dew_point': ('awair_dew_point_celsius',   'Dew point in degrees Celsius'),
+    }
+
+    _lock = Lock()
+    _data: dict = {}
+
+    def poll_device(ip):
+        url = f'http://{ip}/air-data/latest'
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                readings = json.loads(resp.read())
+            with _lock:
+                _data[ip] = (time.time(), readings)
+        except Exception as e:
+            print(f'awair-exporter: poll {ip}: {e}', file=sys.stderr, flush=True)
+            with _lock:
+                _data[ip] = (time.time(), None)
+
+    def poll_loop():
+        while True:
+            for ip in DEVICES:
+                poll_device(ip)
+            time.sleep(POLL_INTERVAL)
+
+    def render_metrics():
+        with _lock:
+            snapshot = dict(_data)
+        lines = []
+        now = time.time()
+
+        lines.append('# HELP awair_up 1 if the device responded to the last poll, 0 otherwise')
+        lines.append('# TYPE awair_up gauge')
+        for ip, meta in DEVICES.items():
+            fetched_at, readings = snapshot.get(ip, (None, None))
+            stale = fetched_at is None or (now - fetched_at) > POLL_INTERVAL * 3
+            up = 0 if (readings is None or stale) else 1
+            lbl = f'location="{meta["location"]}",device_uuid="{meta["device_uuid"]}"'
+            lines.append(f'awair_up{{{lbl}}} {up}')
+
+        for api_key, (metric_name, help_text) in METRIC_MAP.items():
+            lines.append(f'# HELP {metric_name} {help_text}')
+            lines.append(f'# TYPE {metric_name} gauge')
+            for ip, meta in DEVICES.items():
+                _, readings = snapshot.get(ip, (None, None))
+                if readings is None:
+                    continue
+                val = readings.get(api_key)
+                if val is None or not isinstance(val, (int, float)) or not math.isfinite(val):
+                    continue
+                lbl = f'location="{meta["location"]}",device_uuid="{meta["device_uuid"]}"'
+                lines.append(f'{metric_name}{{{lbl}}} {val}')
+
+        lines.append('')
+        return '\n'.join(lines)
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path not in ('/', '/metrics'):
+                self.send_response(404)
+                self.end_headers()
+                return
+            try:
+                body = render_metrics().encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(str(e).encode())
+
+        def log_message(self, fmt, *args):
+            pass
+
+    if __name__ == '__main__':
+        Thread(target=poll_loop, daemon=True).start()
+        server = HTTPServer(('', PORT), Handler)
+        print(f'awair-exporter listening on :{PORT}', flush=True)
+        server.serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: awair-exporter
+  namespace: lifestyle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: awair-exporter
+  template:
+    metadata:
+      labels:
+        app: awair-exporter
+    spec:
+      containers:
+        - name: awair-exporter
+          image: python:3.12-slim
+          command: [python3, /scripts/awair-exporter.py]
+          ports:
+            - name: metrics
+              containerPort: 9092
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: scripts
+          configMap:
+            name: awair-exporter
+            defaultMode: 0755
+      priorityClassName: cluster-low
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: awair-exporter
+  namespace: lifestyle
+  labels:
+    app: awair-exporter
+spec:
+  selector:
+    app: awair-exporter
+  ports:
+    - name: metrics
+      port: 9092
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: awair-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  namespaceSelector:
+    matchNames:
+      - lifestyle
+  selector:
+    matchLabels:
+      app: awair-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
