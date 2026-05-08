@@ -1,0 +1,246 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-exporter
+  namespace: claude
+data:
+  github-exporter.py: |
+    #!/usr/bin/env python3
+    """GitHub Prometheus exporter — open/closed issues and PRs for zuzak repos.
+
+    Uses GitHub App auth (RS256 JWT via PyJWT) to avoid PAT management.
+    Metrics polled every POLL_INTERVAL seconds via the GitHub search API.
+    """
+    import json
+    import os
+    import time
+    import urllib.parse
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from threading import Lock, Thread
+
+    import jwt  # PyJWT — installed by init container
+
+    PORT = int(os.environ.get('GITHUB_EXPORTER_PORT', '9171'))
+    POLL_INTERVAL = int(os.environ.get('POLL_INTERVAL', '60'))
+    APP_ID = os.environ['GITHUB_APP_ID']
+    INSTALLATION_ID = os.environ['GITHUB_INSTALLATION_ID']
+    PRIVATE_KEY = os.environ['GITHUB_PRIVATE_KEY']
+    REPOS = os.environ.get('GITHUB_REPOS', 'zuzak/claude,zuzak/kube').split(',')
+
+    _lock = Lock()
+    _metrics_text = b''
+    _token: str | None = None
+    _token_expiry = 0.0
+
+    # (name, type, help, search-qualifier)
+    METRICS = [
+        ('github_issues_open',          'gauge', 'Open GitHub issues',                    'is:issue is:open'),
+        ('github_issues_closed',        'gauge', 'Closed GitHub issues',                  'is:issue is:closed'),
+        ('github_prs_open',             'gauge', 'Open GitHub pull requests',              'is:pr is:open'),
+        ('github_prs_merged',           'gauge', 'Merged GitHub pull requests',            'is:pr is:merged'),
+        ('github_prs_closed_unmerged',  'gauge', 'Closed-without-merge pull requests',     'is:pr is:closed -is:merged'),
+    ]
+
+
+    def _make_jwt() -> str:
+        now = int(time.time())
+        return jwt.encode(
+            {'iat': now - 60, 'exp': now + 600, 'iss': APP_ID},
+            PRIVATE_KEY,
+            algorithm='RS256',
+        )
+
+
+    def _get_token() -> str:
+        global _token, _token_expiry
+        now = time.time()
+        if _token and now < _token_expiry - 120:
+            return _token
+
+        j = _make_jwt()
+        url = f'https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens'
+        req = urllib.request.Request(url, method='POST', data=b'{}')
+        req.add_header('Authorization', f'Bearer {j}')
+        req.add_header('Accept', 'application/vnd.github.v3+json')
+        req.add_header('User-Agent', 'zuzak-github-exporter/1.0')
+        with urllib.request.urlopen(req) as resp:
+            data = json.load(resp)
+
+        _token = data['token']
+        _token_expiry = now + 3600
+        return _token
+
+
+    def _search_count(q: str) -> int:
+        token = _get_token()
+        url = 'https://api.github.com/search/issues?per_page=1&q=' + urllib.parse.quote(q)
+        req = urllib.request.Request(url)
+        req.add_header('Authorization', f'Bearer {token}')
+        req.add_header('Accept', 'application/vnd.github.v3+json')
+        req.add_header('User-Agent', 'zuzak-github-exporter/1.0')
+        with urllib.request.urlopen(req) as resp:
+            return json.load(resp)['total_count']
+
+
+    def _poll() -> None:
+        global _metrics_text
+        lines: list[str] = []
+        for name, mtype, help_text, qualifier in METRICS:
+            lines.append(f'# HELP {name} {help_text}')
+            lines.append(f'# TYPE {name} {mtype}')
+            for repo in REPOS:
+                q = f'repo:{repo} {qualifier}'
+                count = _search_count(q)
+                lines.append(f'{name}{{repo="{repo}"}} {count}')
+        with _lock:
+            _metrics_text = ('\n'.join(lines) + '\n').encode()
+
+
+    def _poll_loop() -> None:
+        while True:
+            try:
+                _poll()
+            except Exception as e:
+                print(f'poll error: {e}', flush=True)
+            time.sleep(POLL_INTERVAL)
+
+
+    class _Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != '/metrics':
+                self.send_response(404)
+                self.end_headers()
+                return
+            with _lock:
+                body = _metrics_text
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *_):
+            pass
+
+
+    if __name__ == '__main__':
+        _poll()
+        Thread(target=_poll_loop, daemon=True).start()
+        server = HTTPServer(('', PORT), _Handler)
+        print(f'github-exporter listening on :{PORT}', flush=True)
+        server.serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-exporter
+  namespace: claude
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-exporter
+  template:
+    metadata:
+      labels:
+        app: github-exporter
+    spec:
+      initContainers:
+        - name: pip-install
+          image: python:3.12-slim
+          command:
+            - pip
+            - install
+            - --no-cache-dir
+            - --target=/pip-packages
+            - "PyJWT>=2.8.0"
+            - "cryptography>=41.0"
+          volumeMounts:
+            - name: pip-packages
+              mountPath: /pip-packages
+      containers:
+        - name: github-exporter
+          image: python:3.12-slim
+          command: [python3, /scripts/github-exporter.py]
+          ports:
+            - name: metrics
+              containerPort: 9171
+          env:
+            - name: PYTHONPATH
+              value: /pip-packages
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: app-id
+            - name: GITHUB_INSTALLATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: installation-id
+            - name: GITHUB_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: private-key
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: pip-packages
+              mountPath: /pip-packages
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 90
+            periodSeconds: 30
+      volumes:
+        - name: scripts
+          configMap:
+            name: github-exporter
+            defaultMode: 0755
+        - name: pip-packages
+          emptyDir: {}
+      priorityClassName: cluster-low
+      nodeSelector:
+        kubernetes.io/hostname: pi.home.arpa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: github-exporter
+  namespace: claude
+  labels:
+    app: github-exporter
+spec:
+  selector:
+    app: github-exporter
+  ports:
+    - name: metrics
+      port: 9171
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: github-exporter
+  namespace: claude
+spec:
+  namespaceSelector:
+    matchNames:
+      - claude
+  selector:
+    matchLabels:
+      app: github-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 60s
+      scrapeTimeout: 30s
