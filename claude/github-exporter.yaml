@@ -6,9 +6,11 @@ metadata:
 data:
   github-exporter.py: |
     #!/usr/bin/env python3
-    """GitHub Prometheus exporter — open/closed issues and PRs for zuzak repos.
+    """GitHub Prometheus exporter — issues and PRs for all GitHub App accessible repos.
 
     Uses GitHub App auth (RS256 JWT via PyJWT) to avoid PAT management.
+    Repos are discovered dynamically via /installation/repositories, cached for 1 hour.
+    Set GITHUB_REPOS=owner/repo,... to override discovery for testing.
     Metrics polled every POLL_INTERVAL seconds via the GitHub search API.
     """
     import json
@@ -26,12 +28,12 @@ data:
     APP_ID = os.environ['GITHUB_APP_ID']
     INSTALLATION_ID = os.environ['GITHUB_INSTALLATION_ID']
     PRIVATE_KEY = os.environ['GITHUB_PRIVATE_KEY']
-    REPOS = os.environ.get('GITHUB_REPOS', 'zuzak/claude,zuzak/kube').split(',')
-
     _lock = Lock()
     _metrics_text = b''
     _token: str | None = None
     _token_expiry = 0.0
+    _repos_cache: list[str] = []
+    _repos_cache_expiry = 0.0
 
     # (name, type, help, search-qualifier)
     METRICS = [
@@ -72,6 +74,34 @@ data:
         return _token
 
 
+    def _get_repos() -> list[str]:
+        global _repos_cache, _repos_cache_expiry
+        override = os.environ.get('GITHUB_REPOS', '')
+        if override:
+            return override.split(',')
+        now = time.time()
+        if _repos_cache and now < _repos_cache_expiry:
+            return _repos_cache
+        token = _get_token()
+        repos: list[str] = []
+        page = 1
+        while True:
+            url = f'https://api.github.com/installation/repositories?per_page=100&page={page}'
+            req = urllib.request.Request(url)
+            req.add_header('Authorization', f'Bearer {token}')
+            req.add_header('Accept', 'application/vnd.github.v3+json')
+            req.add_header('User-Agent', 'zuzak-github-exporter/1.0')
+            with urllib.request.urlopen(req) as resp:
+                data = json.load(resp)
+            repos.extend(r['full_name'] for r in data['repositories'])
+            if len(data['repositories']) < 100:
+                break
+            page += 1
+        _repos_cache = repos
+        _repos_cache_expiry = now + 3600
+        return repos
+
+
     def _search_count(q: str) -> int:
         token = _get_token()
         url = 'https://api.github.com/search/issues?per_page=1&q=' + urllib.parse.quote(q)
@@ -89,7 +119,7 @@ data:
         for name, mtype, help_text, qualifier in METRICS:
             lines.append(f'# HELP {name} {help_text}')
             lines.append(f'# TYPE {name} {mtype}')
-            for repo in REPOS:
+            for repo in _get_repos():
                 q = f'repo:{repo} {qualifier}'
                 count = _search_count(q)
                 lines.append(f'{name}{{repo="{repo}"}} {count}')
