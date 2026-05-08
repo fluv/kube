@@ -3,6 +3,12 @@ kind: ProxyClass
 metadata:
   name: spread-across-nodes
 spec:
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true
+      labels:
+        release: prometheus
   statefulSet:
     pod:
       topologySpreadConstraints:
