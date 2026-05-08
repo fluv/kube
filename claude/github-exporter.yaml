@@ -155,6 +155,8 @@ data:
 
 
     if __name__ == '__main__':
+        repos = _get_repos()
+        print(f'github-exporter: monitoring {len(repos)} repos: {", ".join(repos)}', flush=True)
         _poll()
         Thread(target=_poll_loop, daemon=True).start()
         server = HTTPServer(('', PORT), _Handler)
