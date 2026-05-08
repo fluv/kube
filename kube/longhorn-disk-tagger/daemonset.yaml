@@ -18,8 +18,9 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: hcloud/node-group
-                    operator: Exists
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values: [pi.home.arpa]
       containers:
         - name: tagger
           image: docker.io/bitnami/kubectl:1.33
