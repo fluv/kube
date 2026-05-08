@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: longhorn-disk-tagger
+  namespace: longhorn-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: longhorn-disk-tagger
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: longhorn-disk-tagger
+    spec:
+      serviceAccountName: longhorn-disk-tagger
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: hcloud/node-group
+                    operator: Exists
+      containers:
+        - name: tagger
+          image: docker.io/bitnami/kubectl:1.33
+          command: [sh, -c]
+          args:
+            - |
+              until kubectl get nodes.longhorn.io/"$NODE_NAME" -n longhorn-system >/dev/null 2>&1; do
+                echo "waiting for longhorn node $NODE_NAME..."
+                sleep 10
+              done
+              DISK_KEYS=$(kubectl get nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
+                -o go-template='{{range $key, $_ := .spec.disks}}{{$key}} {{end}}')
+              PATCH='{"spec":{"disks":{'
+              FIRST=true
+              for KEY in $DISK_KEYS; do
+                [ "$FIRST" = "true" ] || PATCH="${PATCH},"
+                PATCH="${PATCH}\"${KEY}\":{\"tags\":[\"durable\"]}"
+                FIRST=false
+              done
+              PATCH="${PATCH}}}}}"
+              kubectl patch nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
+                --type=merge --patch "$PATCH"
+              echo "tagged all disks on $NODE_NAME as durable"
+              exec sleep infinity
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
