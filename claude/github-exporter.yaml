@@ -109,8 +109,12 @@ data:
         req.add_header('Authorization', f'Bearer {token}')
         req.add_header('Accept', 'application/vnd.github.v3+json')
         req.add_header('User-Agent', 'zuzak-github-exporter/1.0')
-        with urllib.request.urlopen(req) as resp:
-            return json.load(resp)['total_count']
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return json.load(resp)['total_count']
+        except urllib.error.HTTPError as e:
+            print(f'search error ({e.code}) for {q!r}', flush=True)
+            return 0
 
 
     def _poll() -> None:
@@ -123,6 +127,7 @@ data:
                 q = f'repo:{repo} {qualifier}'
                 count = _search_count(q)
                 lines.append(f'{name}{{repo="{repo}"}} {count}')
+                time.sleep(2)
         with _lock:
             _metrics_text = ('\n'.join(lines) + '\n').encode()
 
@@ -157,7 +162,6 @@ data:
     if __name__ == '__main__':
         repos = _get_repos()
         print(f'github-exporter: monitoring {len(repos)} repos: {", ".join(repos)}', flush=True)
-        _poll()
         Thread(target=_poll_loop, daemon=True).start()
         server = HTTPServer(('', PORT), _Handler)
         print(f'github-exporter listening on :{PORT}', flush=True)
