@@ -24,6 +24,8 @@ users:
   - name: claude
     shell: /bin/bash
     ssh_authorized_keys:
+      # Pubkey is inlined; keep in sync with /home/claude/.ssh/id_ed25519_kube.pub
+      # on the pi. If rotated, update here and re-run update-cloud-init-secret.py.
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICx3FhQP0y+OKUoFw7CMKCsh4yQE/r4A2tC2M/sjWIdz claude@pi.home.arpa-kube
 
 runcmd:
