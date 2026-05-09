@@ -3,9 +3,9 @@ webhook-receiver
 
 GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3s.fluv.net/github`.
 
-v2 (current): routes `pull_request` and `issue_comment` events to a DeepSeek PR review pipeline (zuzak/claude#816). Reviews posted under `claude-zuzak[bot]` using the existing GitHub App credentials.
+v3 (current): adds repo contents snapshot via git tree API (zuzak/kube#268). DS now sees the full repo at HEAD (capped at 400KB, with per-repo `exclude_prefixes` honoured) alongside patch + prior thread.
 
-v1 limitation: the repo contents snapshot is not included in reviews — the DS prompt sees the patch and prior thread but not the full codebase at HEAD. This reduces review depth for context-heavy changes. v3 will add a full snapshot via the git tree API.
+v2: routes `pull_request` and `issue_comment` events to a DeepSeek PR review pipeline (zuzak/claude#816). Reviews posted under `claude-zuzak[bot]` using the existing GitHub App credentials.
 
 Why a stock python image
 ------------------------

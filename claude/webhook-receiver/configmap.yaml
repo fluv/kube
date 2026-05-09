@@ -7,15 +7,13 @@ data:
   script.py: |
     """GitHub webhook receiver with DeepSeek PR review handler.
 
+    v3: Adds repo contents snapshot via git tree API (zuzak/kube#268).
     v2: Routes pull_request / issue_comment events to the DS pipeline.
     v1: Smoke-test (HMAC verification, logging).
 
     DS reviews post as GitHub PR reviews under claude-zuzak[bot]. The
     DeepSeek API key is optional — pod starts normally without it but DS
     reviews are skipped.
-
-    v1 limitation: repo contents snapshot not included — DS reviews are
-    based on patch + prior thread + context files only.
 
     Identity note: claude-zuzak[bot] cannot APPROVE/REQUEST_CHANGES on PRs
     it authored (GitHub 422). For bot-authored PRs, verdicts are posted as
@@ -63,12 +61,14 @@ data:
         "zuzak/claude": {
             "label_deadlock": "vet:deadlock",
             "skip_prefixes": {"dot-claude/projects/"},
+            "exclude_prefixes": {"projects/", "dot-claude/projects/"},
             "model_push": "deepseek-v4-flash",
             "model_recheck": "deepseek-v4-pro",
         },
         "zuzak/kube": {
             "label_deadlock": "vet:deadlock",
             "skip_prefixes": set(),
+            "exclude_prefixes": set(),
             "model_push": "deepseek-reasoner",
             "model_recheck": "deepseek-reasoner",
         },
@@ -76,9 +76,9 @@ data:
     DEFAULT_CONFIG = {
         "label_deadlock": "",
         "skip_prefixes": set(),
+        "exclude_prefixes": set(),
         "model_push": "deepseek-v4-flash",
         "model_recheck": "deepseek-v4-pro",
-        # exclude_prefixes: reserved for v3 (repo contents snapshot)
     }
 
     # --- Metrics ---
@@ -197,6 +197,47 @@ data:
             return "\n".join(parts)
         except Exception:
             return ""
+
+    def _get_repo_snapshot(repo: str, head_sha: str, exclude_prefixes: set,
+                           max_bytes: int = 400_000) -> str:
+        """Fetch repo files at head_sha for {{REPO_CONTENTS}}. Mirrors the
+        action's snapshot: 400KB cap, paths sorted, =/= header per file,
+        truncation note at the end. Skips paths matching any exclude prefix."""
+        try:
+            tree = _gh(f"/repos/{repo}/git/trees/{head_sha}?recursive=1")
+        except Exception as e:
+            log.warning("repo snapshot tree fetch failed repo=%s: %s", repo, e)
+            return "_(repository snapshot unavailable)_"
+
+        chunks = []
+        total = 0
+        truncated = False
+        for item in sorted(tree.get("tree", []), key=lambda x: x["path"]):
+            if item.get("type") != "blob":
+                continue
+            path = item["path"]
+            if any(path.startswith(p) for p in exclude_prefixes):
+                continue
+            try:
+                blob = _gh(f"/repos/{repo}/git/blobs/{item['sha']}")
+            except Exception:
+                continue
+            try:
+                if blob.get("encoding") == "base64":
+                    content = base64.b64decode(blob["content"]).decode("utf-8", errors="replace")
+                else:
+                    content = blob.get("content", "")
+            except Exception:
+                continue
+            chunk = f"=== {path} ===\n{content}\n"
+            if total + len(chunk) > max_bytes:
+                truncated = True
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+        if truncated:
+            chunks.append(f"\n_(remaining files truncated at {max_bytes} bytes)_\n")
+        return "".join(chunks)
 
     def _get_prior_thread(repo: str, pr_number: int) -> str:
         comments = _gh(f"/repos/{repo}/issues/{pr_number}/comments?per_page=100")
@@ -332,11 +373,13 @@ data:
         except Exception:
             labels = "(unavailable)"
 
-        # Repo contents skipped in v1 — see module docstring.
-        repo_contents = (
-            "_(repository file snapshot not included in v1 webhook receiver —"
-            " DS review is based on patch and prior thread only)_"
-        )
+        try:
+            repo_contents = _get_repo_snapshot(
+                repo, head_sha, cfg.get("exclude_prefixes", set())
+            )
+        except Exception as e:
+            log.warning("repo snapshot failed pr=%d: %s", pr_number, e)
+            repo_contents = "_(repository snapshot unavailable)_"
 
         trigger = "recheck" if is_recheck else "first-or-push"
         model_key = "model_recheck" if is_recheck else "model_push"
