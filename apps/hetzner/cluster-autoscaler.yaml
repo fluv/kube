@@ -56,6 +56,9 @@ spec:
         tolerations:
           - key: node-role.kubernetes.io/control-plane
             effect: NoSchedule
+          - key: node.kubernetes.io/unschedulable
+            effect: NoSchedule
+            operator: Exists
         priorityClassName: system-cluster-critical
   destination:
     server: https://kubernetes.default.svc
