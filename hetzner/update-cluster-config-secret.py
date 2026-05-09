@@ -84,7 +84,11 @@ def main():
         print(redacted)
         return
 
-    value = base64.b64encode(config_json.encode()).decode()
+    # HCLOUD_CLUSTER_CONFIG must arrive at the autoscaler as base64-encoded JSON.
+    # k8s decodes /data values once when mounting as env var, so double-encode:
+    # outer for the secret wire format, inner for what the autoscaler parses.
+    inner = base64.b64encode(config_json.encode()).decode()
+    value = base64.b64encode(inner.encode()).decode()
     # Use add+replace to handle both first-time creation and updates
     test_get = kubectl("get", "secret", "-n", SECRET_NS, SECRET_NAME,
                        "-o", "jsonpath={.data.cluster-config}")
