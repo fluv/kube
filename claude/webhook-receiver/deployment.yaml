@@ -30,14 +30,12 @@ spec:
         - name: webhook-receiver
           image: python:3.13-slim
           command: ["/bin/sh", "-c"]
-          # Stock Python image — pip-install aiohttp at startup so we
-          # don't need a custom image build (GitHub Actions billing is
-          # exhausted as of 2026-05-09; promote to a real image once
-          # Actions is back).
+          # Stock Python image — pip-install at startup; promote to a baked
+          # image once GitHub Actions billing resets (tracked in #816).
           args:
             - |
               set -e
-              pip install --quiet --no-cache-dir aiohttp==3.10.10
+              pip install --quiet --no-cache-dir aiohttp==3.10.10 PyJWT==2.9.0 cryptography>=41.0
               exec python /app/script.py
           ports:
             - name: http
@@ -48,13 +46,33 @@ spec:
                 secretKeyRef:
                   name: claude-github-app
                   key: webhook-secret
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: app-id
+            - name: GITHUB_INSTALLATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: installation-id
+            - name: GITHUB_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: private-key
+            - name: DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: deepseek
+                  key: api-key
+                  optional: true
           readinessProbe:
             httpGet:
               path: /healthz
               port: http
-            # pip install needs ~10s on the Pi over the LAN; give the
-            # readiness probe room before it starts polling.
-            initialDelaySeconds: 15
+            # pip install now includes PyJWT + cryptography; ~30s on Pi LAN.
+            initialDelaySeconds: 30
             periodSeconds: 5
             failureThreshold: 6
           livenessProbe:
@@ -69,9 +87,9 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 64Mi
+              memory: 128Mi
             limits:
-              memory: 256Mi
+              memory: 512Mi
       volumes:
         - name: script
           configMap:
