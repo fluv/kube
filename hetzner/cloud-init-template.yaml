@@ -3,9 +3,9 @@
 # time; the rendered, base64-encoded result lives in the hcloud-init-data
 # Kubernetes secret under the 'cloud-init' key.
 #
-# Substitution variables:
-#   __TAILSCALE_AUTH_KEY__  — ephemeral reusable auth key tagged tag:k3s
-#   __K3S_TOKEN__           — contents of /var/lib/rancher/k3s/server/node-token
+# Substitution variables (script replaces these with actual values):
+#   <TAILSCALE_AUTH_KEY>  — ephemeral reusable auth key tagged tag:k3s
+#   <K3S_TOKEN>           — contents of /var/lib/rancher/k3s/server/node-token
 #
 # k3s server endpoint: saraneth via Tailscale MagicDNS (resolves to 100.95.187.35)
 # Tailnet: gentoo-mine.ts.net
