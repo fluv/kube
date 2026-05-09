@@ -59,8 +59,6 @@ spec:
     matchLabels:
       prometheus: claude
   priorityClassName: cluster-low
-  nodeSelector:
-    kubernetes.io/hostname: pi.home.arpa
 ---
 apiVersion: v1
 kind: Service

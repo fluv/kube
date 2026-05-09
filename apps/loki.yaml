@@ -6,9 +6,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
     kubernetes.io/description: |
-      Grafana Loki in monolithic SingleBinary mode. Pinned to the Pi via
-      nodeSelector; PVC on the `longhorn-durable` storage class to keep replicas
-      off the SD card. The PVC size (not a time-based limit) is the real
+      Grafana Loki in monolithic SingleBinary mode. PVC on the
+      `longhorn-durable` storage class so replicas live on attached storage,
+      not the SD card. The PVC size (not a time-based limit) is the real
       retention cap — the 90-day retention
       ceiling is set high on purpose so ingest stalls rather than silently
       dropping old chunks if throughput ever spikes. PrometheusRule alerts
@@ -61,8 +61,6 @@ spec:
         singleBinary:
           replicas: 1
           priorityClassName: cluster-low
-          nodeSelector:
-            kubernetes.io/hostname: pi.home.arpa
           persistence:
             enabled: true
             storageClass: longhorn-durable
