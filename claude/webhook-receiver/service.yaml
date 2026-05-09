@@ -1,3 +1,5 @@
+# Service exposes the webhook-receiver pod on port 80 (named `http`).
+# Behind the public ingress at webhook.k3s.fluv.net/github.
 apiVersion: v1
 kind: Service
 metadata:
