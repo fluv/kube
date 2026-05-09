@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: webhook-receiver
+  namespace: claude
+  labels:
+    prometheus: claude
+spec:
+  namespaceSelector:
+    matchNames:
+      - claude
+  selector:
+    matchLabels:
+      app: webhook-receiver
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

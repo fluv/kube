@@ -35,7 +35,7 @@ spec:
           args:
             - |
               set -e
-              pip install --quiet --no-cache-dir aiohttp==3.10.10 PyJWT==2.9.0 cryptography>=41.0
+              pip install --quiet --no-cache-dir aiohttp==3.10.10 PyJWT==2.9.0 cryptography>=41.0 prometheus-client>=0.20
               exec python /app/script.py
           ports:
             - name: http
