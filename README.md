@@ -137,9 +137,11 @@ As such:
 * the node on the VPS has a `CriticalAddonsOnly=true:PreferNoSchedule` taint to
   encourage pods to be scheduled elsewhere if possible, while still allowing it
   to step in if needed (which `…:NoSchedule` would prevent)
-* workload charts use a `preferredDuringSchedulingIgnoredDuringExecution` node
-  affinity for the Pi so that pods prefer the Pi but can fall back to the VPS
-  when it is unavailable
+* workloads with pi-specific dependencies (LAN access, local file reads) use
+  a `preferredDuringSchedulingIgnoredDuringExecution` node affinity for the
+  Pi or a hard `nodeSelector`; other workloads are unconstrained — saraneth's
+  kubelet reservations and the `cluster-low` priority class protect it
+  from over-scheduling
 * two custom PriorityClasses control which workloads actually get resources on
   the VPS during a Pi outage: `cluster-critical` (value 1000000) for services
   like Mastodon, Authentik, Argo CD, cert-manager and ingress-nginx, and
