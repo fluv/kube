@@ -3,7 +3,7 @@ webhook-receiver
 
 GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3s.fluv.net/github`.
 
-v3 (current): adds repo contents snapshot via git tree API (zuzak/kube#268). DS now sees the full repo at HEAD (capped at 400KB, with per-repo `exclude_prefixes` honoured) alongside patch + prior thread.
+v3 (current): adds repo contents snapshot via git tree API (zuzak/kube#268). DS now sees the full repo at HEAD (capped at 400KB, with per-repo `exclude_prefixes` honoured) alongside patch + prior thread. Per-repo `exclude_prefixes` lives in `REPO_CONFIG` inside `script.py`; e.g. `zuzak/claude` skips `projects/` and `dot-claude/projects/`, `zuzak/kube` skips nothing.
 
 v2: routes `pull_request` and `issue_comment` events to a DeepSeek PR review pipeline (zuzak/claude#816). Reviews posted under `claude-zuzak[bot]` using the existing GitHub App credentials.
 
