@@ -5,38 +5,368 @@ metadata:
   namespace: claude
 data:
   script.py: |
-    """GitHub webhook receiver — verifies HMAC, logs the event.
+    """GitHub webhook receiver with DeepSeek PR review handler.
 
-    v1: smoke-test only. Logs to stdout, returns 204. Future PRs add
-    event-log persistence (for claude-monitor consumption) and a DS-review
-    handler (zuzak/claude#816).
+    v2: Routes pull_request / issue_comment events to the DS pipeline.
+    v1: Smoke-test (HMAC verification, logging).
+
+    DS reviews are posted as GitHub PR reviews under the GitHub App identity
+    (claude-zuzak[bot]). The DeepSeek API key is optional — if absent the
+    pod starts normally but DS reviews are silently skipped.
+
+    v1 simplification: repo contents snapshot is not included — too many API
+    calls for the latency budget. DS reviews are based on patch + prior thread.
     """
+    import asyncio
+    import base64
     import hashlib
     import hmac
     import json
     import logging
     import os
+    import time
+    import urllib.parse
+    import urllib.request
     from datetime import datetime, timezone
 
     from aiohttp import web
-
-    WEBHOOK_SECRET = os.environ["WEBHOOK_SECRET"].encode()
+    import jwt  # PyJWT — installed by init container
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     log = logging.getLogger("webhook")
 
+    # --- Config ---
 
-    def verify_signature(body: bytes, header):
+    WEBHOOK_SECRET = os.environ["WEBHOOK_SECRET"].encode()
+    APP_ID = os.environ.get("GITHUB_APP_ID", "")
+    INSTALLATION_ID = os.environ.get("GITHUB_INSTALLATION_ID", "")
+    PRIVATE_KEY = os.environ.get("GITHUB_PRIVATE_KEY", "")
+    DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+    BOT_LOGIN = os.environ.get("BOT_LOGIN", "claude-zuzak[bot]")
+    RECHECK_PREFIX = "/ds-recheck"
+    MAX_RECHECKS = 2
+
+    DS_ENABLED = bool(APP_ID and INSTALLATION_ID and PRIVATE_KEY and DEEPSEEK_API_KEY)
+    if not DS_ENABLED:
+        log.warning("DS review disabled — GITHUB_APP_ID / GITHUB_INSTALLATION_ID / "
+                    "GITHUB_PRIVATE_KEY / DEEPSEEK_API_KEY not all set")
+
+    # Per-repo config — mirrors each repo's deepseek-review.yml inputs.
+    REPO_CONFIG = {
+        "zuzak/claude": {
+            "label_deadlock": "vet:deadlock",
+            "exclude_prefixes": {"projects/", "dot-claude/projects/"},
+            "skip_prefixes": {"dot-claude/projects/"},
+            "model_push": "deepseek-v4-flash",
+            "model_recheck": "deepseek-v4-pro",
+        },
+        "zuzak/kube": {
+            "label_deadlock": "vet:deadlock",
+            "exclude_prefixes": set(),
+            "skip_prefixes": set(),
+            "model_push": "deepseek-reasoner",
+            "model_recheck": "deepseek-reasoner",
+        },
+    }
+    DEFAULT_CONFIG = {
+        "label_deadlock": "",
+        "exclude_prefixes": set(),
+        "skip_prefixes": set(),
+        "model_push": "deepseek-v4-flash",
+        "model_recheck": "deepseek-v4-pro",
+    }
+
+    # --- HMAC ---
+
+    def _verify_sig(body: bytes, header: str) -> bool:
         if not header or not header.startswith("sha256="):
             return False
         expected = "sha256=" + hmac.new(WEBHOOK_SECRET, body, hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, header)
 
+    # --- GitHub App auth ---
 
-    async def github_handler(request):
+    _gh_token: str = ""
+    _gh_token_expiry: float = 0.0
+
+    def _make_jwt() -> str:
+        now = int(time.time())
+        return jwt.encode(
+            {"iat": now - 60, "exp": now + 600, "iss": APP_ID},
+            PRIVATE_KEY,
+            algorithm="RS256",
+        )
+
+    def _get_gh_token() -> str:
+        global _gh_token, _gh_token_expiry
+        now = time.time()
+        if _gh_token and now < _gh_token_expiry - 120:
+            return _gh_token
+        j = _make_jwt()
+        url = f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens"
+        req = urllib.request.Request(url, method="POST", data=b"{}")
+        req.add_header("Authorization", f"Bearer {j}")
+        req.add_header("Accept", "application/vnd.github.v3+json")
+        req.add_header("User-Agent", "zuzak-webhook-receiver/2.0")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.load(resp)
+        _gh_token = data["token"]
+        _gh_token_expiry = now + 3600
+        return _gh_token
+
+    def _gh(path: str, method: str = "GET", body=None):
+        token = _get_gh_token()
+        url = f"https://api.github.com{path}"
+        data = json.dumps(body).encode() if body else None
+        req = urllib.request.Request(url, method=method, data=data)
+        req.add_header("Authorization", f"Bearer {token}")
+        req.add_header("Accept", "application/vnd.github.v3+json")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("User-Agent", "zuzak-webhook-receiver/2.0")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.load(resp)
+
+    # --- Prompt template cache ---
+
+    _prompt_template: str = ""
+
+    def _get_prompt_template() -> str:
+        global _prompt_template
+        if _prompt_template:
+            return _prompt_template
+        data = _gh("/repos/zuzak/deepseek-review-action/contents/prompt-template.md")
+        _prompt_template = base64.b64decode(data["content"]).decode()
+        return _prompt_template
+
+    # --- DS pipeline helpers ---
+
+    def _get_patch(repo: str, base_ref: str, head_sha: str) -> str:
+        token = _get_gh_token()
+        url = f"https://api.github.com/repos/{repo}/compare/{base_ref}...{head_sha}"
+        req = urllib.request.Request(url)
+        req.add_header("Authorization", f"Bearer {token}")
+        req.add_header("Accept", "application/vnd.github.v3.diff")
+        req.add_header("User-Agent", "zuzak-webhook-receiver/2.0")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.read().decode("utf-8", errors="replace")
+
+    def _get_repo_context(repo: str, head_sha: str) -> str:
+        """Fetch .github/deepseek/*.md repo-specific context files."""
+        try:
+            items = _gh(f"/repos/{repo}/contents/.github/deepseek?ref={head_sha}")
+            parts = []
+            for item in sorted(items, key=lambda x: x["name"]):
+                if item["name"].endswith(".md"):
+                    blob = _gh(f"/repos/{repo}/git/blobs/{item['sha']}")
+                    parts.append(base64.b64decode(blob["content"]).decode())
+            return "\n".join(parts)
+        except Exception:
+            return ""
+
+    def _get_prior_thread(repo: str, pr_number: int) -> str:
+        comments = _gh(f"/repos/{repo}/issues/{pr_number}/comments?per_page=100")
+        if not comments:
+            return "_(empty — this is the first review round.)_"
+        return "\n".join(
+            f"### {c['user']['login']} — {c['created_at']}\n\n{c['body']}\n"
+            for c in comments
+        )
+
+    def _get_pr_labels(repo: str, pr_number: int) -> str:
+        pr = _gh(f"/repos/{repo}/pulls/{pr_number}")
+        labels = [lb["name"] for lb in pr.get("labels", [])]
+        return ", ".join(labels) if labels else "(none)"
+
+    def _count_rechecks(repo: str, pr_number: int) -> int:
+        """Count /ds-recheck comments since the last DS bot review."""
+        reviews = _gh(f"/repos/{repo}/pulls/{pr_number}/reviews?per_page=100")
+        ds_reviews = [r for r in reviews if r["user"]["login"] == BOT_LOGIN]
+        since = max((r["submitted_at"] for r in ds_reviews), default="")
+        comments = _gh(f"/repos/{repo}/issues/{pr_number}/comments?per_page=100")
+        return sum(
+            1 for c in comments
+            if c["body"].startswith(RECHECK_PREFIX)
+            and (not since or c["created_at"] > since)
+        )
+
+    def _dismiss_changes_requested(repo: str, pr_number: int) -> None:
+        reviews = _gh(f"/repos/{repo}/pulls/{pr_number}/reviews?per_page=100")
+        for r in reviews:
+            if r["user"]["login"] == BOT_LOGIN and r["state"] == "CHANGES_REQUESTED":
+                try:
+                    _gh(
+                        f"/repos/{repo}/pulls/{pr_number}/reviews/{r['id']}/dismissals",
+                        method="PUT",
+                        body={"message": "DS posted a clean verdict — dismissing prior CHANGES_REQUESTED"},
+                    )
+                except Exception:
+                    pass
+
+    def _apply_label(repo: str, pr_number: int, label: str) -> None:
+        if not label:
+            return
+        try:
+            _gh(f"/repos/{repo}/labels", method="POST", body={
+                "name": label, "color": "B60205",
+                "description": "DS/author impasse or recheck cap reached",
+            })
+        except Exception:
+            pass
+        try:
+            _gh(f"/repos/{repo}/issues/{pr_number}/labels",
+                method="POST", body={"labels": [label]})
+        except Exception:
+            pass
+
+    def _call_deepseek(prompt: str, model: str) -> dict:
+        payload = json.dumps({
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.deepseek.com/chat/completions",
+            method="POST",
+            data=payload,
+        )
+        req.add_header("Authorization", f"Bearer {DEEPSEEK_API_KEY}")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("User-Agent", "zuzak-webhook-receiver/2.0")
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.load(resp)
+
+    # --- Review pipeline ---
+
+    def _review_pr(repo: str, pr_number: int, head_sha: str, base_ref: str,
+                   is_recheck: bool, cfg: dict) -> None:
+        log.info("ds_review repo=%s pr=%d head=%.8s recheck=%s",
+                 repo, pr_number, head_sha, is_recheck)
+
+        if is_recheck:
+            n = _count_rechecks(repo, pr_number)
+            if n > MAX_RECHECKS:
+                log.info("recheck cap n=%d pr=%d", n, pr_number)
+                _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
+                return
+
+        try:
+            patch = _get_patch(repo, base_ref, head_sha)
+        except Exception as e:
+            log.error("patch fetch failed pr=%d: %s", pr_number, e)
+            return
+
+        if not patch:
+            log.info("empty patch pr=%d — skip", pr_number)
+            return
+        if len(patch) > 200_000:
+            log.info("patch too large %d bytes pr=%d — skip", len(patch), pr_number)
+            return
+
+        skip_pfx = cfg.get("skip_prefixes", set())
+        if skip_pfx:
+            changed = [ln[6:] for ln in patch.splitlines() if ln.startswith("+++ b/")]
+            if any(any(p.startswith(pfx) for pfx in skip_pfx) for p in changed):
+                log.info("skip_prefix match pr=%d", pr_number)
+                return
+
+        try:
+            repo_context = _get_repo_context(repo, head_sha)
+        except Exception:
+            repo_context = ""
+        try:
+            prior_thread = _get_prior_thread(repo, pr_number)
+        except Exception:
+            prior_thread = "_(unavailable)_"
+        try:
+            labels = _get_pr_labels(repo, pr_number)
+        except Exception:
+            labels = "(unavailable)"
+
+        # Repo contents skipped in v1 — see module docstring.
+        repo_contents = (
+            "_(repository file snapshot not included in v1 webhook receiver —"
+            " DS review is based on patch and prior thread only)_"
+        )
+
+        trigger = "recheck" if is_recheck else "first-or-push"
+        model_key = "model_recheck" if is_recheck else "model_push"
+        model = cfg.get(model_key, "deepseek-v4-flash")
+
+        template = _get_prompt_template()
+        prompt = (template
+                  .replace("{{REPO_CONTEXT}}", repo_context)
+                  .replace("{{TRIGGER}}", trigger)
+                  .replace("{{PR_LABELS}}", labels)
+                  .replace("{{PRIOR_REVIEW_THREAD}}", prior_thread)
+                  .replace("{{REPO_CONTENTS}}", repo_contents)
+                  .replace("{{PATCH}}", patch))
+
+        log.info("calling deepseek model=%s prompt_len=%d pr=%d", model, len(prompt), pr_number)
+        try:
+            response = _call_deepseek(prompt, model)
+        except Exception as e:
+            log.error("deepseek call failed pr=%d: %s", pr_number, e)
+            return
+
+        if "error" in response:
+            log.error("deepseek error pr=%d: %s", pr_number, response.get("error"))
+            return
+
+        body = response["choices"][0]["message"]["content"]
+        actual_model = response.get("model", model)
+        body += (
+            f"\n\n_Reviewed by {actual_model} against "
+            f"https://github.com/{repo}/compare/{base_ref}...{head_sha}"
+            f" with prior review thread as continuity_"
+        )
+
+        last_line = body.strip().split("\n")[-1]
+        impasse = last_line == "<!-- IMPASSE -->"
+        request_changes = last_line == "<!-- REQUEST CHANGES -->"
+        approve = last_line == "<!-- APPROVE -->"
+
+        if not request_changes and not impasse:
+            _dismiss_changes_requested(repo, pr_number)
+
+        try:
+            if impasse:
+                _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
+                _gh(f"/repos/{repo}/issues/{pr_number}/comments",
+                    method="POST", body={"body": body})
+            elif request_changes:
+                _gh(f"/repos/{repo}/pulls/{pr_number}/reviews",
+                    method="POST",
+                    body={"commit_id": head_sha, "body": body, "event": "REQUEST_CHANGES"})
+            elif approve:
+                _gh(f"/repos/{repo}/pulls/{pr_number}/reviews",
+                    method="POST",
+                    body={"commit_id": head_sha, "body": body, "event": "APPROVE"})
+            else:
+                _gh(f"/repos/{repo}/pulls/{pr_number}/reviews",
+                    method="POST",
+                    body={"commit_id": head_sha, "body": body, "event": "COMMENT"})
+        except Exception as e:
+            log.error("post review failed pr=%d: %s", pr_number, e)
+            return
+
+        verdict = ("impasse" if impasse else "request_changes" if request_changes
+                   else "approve" if approve else "comment")
+        log.info("review posted pr=%d verdict=%s model=%s", pr_number, verdict, actual_model)
+
+    def _handle_recheck(repo: str, pr_number: int, cfg: dict) -> None:
+        try:
+            pr = _gh(f"/repos/{repo}/pulls/{pr_number}")
+            _review_pr(repo, pr_number,
+                       pr["head"]["sha"], pr["base"]["ref"],
+                       True, cfg)
+        except Exception as e:
+            log.error("recheck failed repo=%s pr=%d: %s", repo, pr_number, e)
+
+    # --- HTTP handlers ---
+
+    async def github_handler(request: web.Request) -> web.Response:
         body = await request.read()
-        sig = request.headers.get("X-Hub-Signature-256")
-        if not verify_signature(body, sig):
+        sig = request.headers.get("X-Hub-Signature-256", "")
+        if not _verify_sig(body, sig):
             log.warning("hmac_fail remote=%s", request.remote)
             return web.Response(status=401)
 
@@ -45,24 +375,43 @@ data:
         payload = json.loads(body)
         repo = payload.get("repository", {}).get("full_name", "?")
         action = payload.get("action", "")
+
         log.info(
             "event=%s action=%s repo=%s delivery=%s received_at=%s",
             event, action, repo, delivery,
             datetime.now(timezone.utc).isoformat(),
         )
+
+        if DS_ENABLED:
+            cfg = REPO_CONFIG.get(repo, DEFAULT_CONFIG)
+
+            if event == "pull_request" and action in ("opened", "synchronize", "reopened"):
+                pr = payload["pull_request"]
+                asyncio.create_task(asyncio.to_thread(
+                    _review_pr,
+                    repo, pr["number"], pr["head"]["sha"], pr["base"]["ref"],
+                    False, cfg,
+                ))
+
+            elif (event == "issue_comment" and action == "created"
+                  and "pull_request" in payload.get("issue", {})):
+                comment_body = payload.get("comment", {}).get("body", "")
+                if comment_body.startswith(RECHECK_PREFIX):
+                    asyncio.create_task(asyncio.to_thread(
+                        _handle_recheck,
+                        repo, payload["issue"]["number"], cfg,
+                    ))
+
         return web.Response(status=204)
 
-
-    async def healthz(request):
+    async def healthz(request: web.Request) -> web.Response:
         return web.Response(text="ok")
 
-
-    def main():
+    def main() -> None:
         app = web.Application()
         app.router.add_post("/github", github_handler)
         app.router.add_get("/healthz", healthz)
         web.run_app(app, host="0.0.0.0", port=8080, access_log=None)
-
 
     if __name__ == "__main__":
         main()
