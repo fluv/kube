@@ -100,7 +100,7 @@ data:
     )
     webhook_to_comment_seconds = Histogram(
         "webhook_to_comment_seconds",
-        "Seconds from _review_pr start to review post",
+        "Seconds from webhook event receipt (post-HMAC) to review posted",
         buckets=[10, 20, 30, 45, 60, 90, 120, 180, 300],
     )
 
@@ -275,8 +275,10 @@ data:
     # --- Review pipeline ---
 
     def _review_pr(repo: str, pr_number: int, head_sha: str, base_ref: str,
-                   is_recheck: bool, cfg: dict, pr_author: str = "") -> None:
-        start = time.monotonic()
+                   is_recheck: bool, cfg: dict, pr_author: str = "",
+                   start: float = 0.0) -> None:
+        if not start:
+            start = time.monotonic()
         log.info("ds_review repo=%s pr=%d head=%.8s recheck=%s author=%s",
                  repo, pr_number, head_sha, is_recheck, pr_author)
 
@@ -389,7 +391,7 @@ data:
         # preserved in the text for the author Claude to parse.
         is_self_review = (pr_author == BOT_LOGIN)
 
-        if not request_changes and not impasse:
+        if not request_changes and not impasse and not is_self_review:
             _dismiss_changes_requested(repo, pr_number)
 
         verdict = ("impasse" if impasse else "request_changes" if request_changes
@@ -424,13 +426,15 @@ data:
         log.info("review posted pr=%d verdict=%s model=%s elapsed=%.1fs",
                  pr_number, verdict, actual_model, elapsed)
 
-    def _handle_recheck(repo: str, pr_number: int, cfg: dict) -> None:
+    def _handle_recheck(repo: str, pr_number: int, cfg: dict,
+                        start: float = 0.0) -> None:
         try:
             pr = _gh(f"/repos/{repo}/pulls/{pr_number}")
             _review_pr(repo, pr_number,
                        pr["head"]["sha"], pr["base"]["ref"],
                        True, cfg,
-                       pr_author=pr["user"]["login"])
+                       pr_author=pr["user"]["login"],
+                       start=start)
         except Exception as e:
             log.error("recheck failed repo=%s pr=%d: %s", repo, pr_number, e)
 
@@ -461,11 +465,13 @@ data:
 
             if event == "pull_request" and action in ("opened", "synchronize", "reopened"):
                 pr = payload["pull_request"]
+                event_start = time.monotonic()
                 task = asyncio.create_task(asyncio.to_thread(
                     _review_pr,
                     repo, pr["number"], pr["head"]["sha"], pr["base"]["ref"],
                     False, cfg,
                     pr["user"]["login"],
+                    event_start,
                 ))
                 _background_tasks.add(task)
                 task.add_done_callback(_background_tasks.discard)
@@ -478,9 +484,11 @@ data:
                   and "pull_request" in payload.get("issue", {})):
                 comment_body = payload.get("comment", {}).get("body", "")
                 if comment_body.startswith(RECHECK_PREFIX):
+                    event_start = time.monotonic()
                     task = asyncio.create_task(asyncio.to_thread(
                         _handle_recheck,
                         repo, payload["issue"]["number"], cfg,
+                        event_start,
                     ))
                     _background_tasks.add(task)
                     task.add_done_callback(_background_tasks.discard)
