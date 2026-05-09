@@ -23,7 +23,7 @@ data:
 
     import jwt  # PyJWT — installed by init container
 
-    PORT = int(os.environ.get('GITHUB_EXPORTER_PORT', '9171'))
+    PORT = int(os.environ.get('METRICS_PORT', '9171'))
     POLL_INTERVAL = int(os.environ.get('POLL_INTERVAL', '60'))
     APP_ID = os.environ['GITHUB_APP_ID']
     INSTALLATION_ID = os.environ['GITHUB_INSTALLATION_ID']
