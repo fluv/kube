@@ -30,7 +30,6 @@ data:
     import logging
     import os
     import time
-    import urllib.parse
     import urllib.request
     import urllib.error
     from datetime import datetime, timezone
@@ -63,14 +62,12 @@ data:
     REPO_CONFIG = {
         "zuzak/claude": {
             "label_deadlock": "vet:deadlock",
-            "exclude_prefixes": {"projects/", "dot-claude/projects/"},
             "skip_prefixes": {"dot-claude/projects/"},
             "model_push": "deepseek-v4-flash",
             "model_recheck": "deepseek-v4-pro",
         },
         "zuzak/kube": {
             "label_deadlock": "vet:deadlock",
-            "exclude_prefixes": set(),
             "skip_prefixes": set(),
             "model_push": "deepseek-reasoner",
             "model_recheck": "deepseek-reasoner",
@@ -78,10 +75,10 @@ data:
     }
     DEFAULT_CONFIG = {
         "label_deadlock": "",
-        "exclude_prefixes": set(),
         "skip_prefixes": set(),
         "model_push": "deepseek-v4-flash",
         "model_recheck": "deepseek-v4-pro",
+        # exclude_prefixes: reserved for v3 (repo contents snapshot)
     }
 
     # --- Metrics ---
@@ -284,6 +281,15 @@ data:
             if n > MAX_RECHECKS:
                 log.info("recheck cap n=%d pr=%d", n, pr_number)
                 _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
+                try:
+                    _gh(f"/repos/{repo}/issues/{pr_number}/comments",
+                        method="POST",
+                        body={"body": (
+                            f"DS recheck cap reached ({MAX_RECHECKS}). "
+                            "No further reviews will be posted until a new commit is pushed."
+                        )})
+                except Exception as e:
+                    log.warning("cap notice post failed pr=%d: %s", pr_number, e)
                 return
 
         try:

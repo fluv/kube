@@ -41,6 +41,11 @@ DS reviews require a `deepseek` k8s secret with an `api-key` field. Create it wi
 
 The pod starts without it (env var is `optional: true`) but DS reviews are skipped — the startup log will say "DS review disabled".
 
+Self-review behaviour
+---------------------
+
+GitHub rejects `APPROVE` and `REQUEST_CHANGES` reviews when the reviewer is the PR author. When `claude-zuzak[bot]` opens a PR, the DS pipeline falls back to posting the review body as a plain issue comment rather than a formal review. The verdict markers (`<!-- APPROVE -->` etc.) are preserved in the comment text so author-side parsing still works. No Reviews-tab verdict appears for bot-authored PRs — this is expected and not a bug.
+
 Smoke test
 ----------
 
