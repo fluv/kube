@@ -266,6 +266,14 @@ data:
         reviews = _gh(f"/repos/{repo}/pulls/{pr_number}/reviews?per_page=100")
         ds_reviews = [r for r in reviews if r["user"]["login"] == BOT_LOGIN]
         since = max((r["submitted_at"] for r in ds_reviews), default="")
+        if not since:
+            # Bot-authored PRs: DS cannot submit formal reviews (GitHub returns 422 on
+            # self-review), so ds_reviews is always empty and the cursor stays at "".
+            # Fall back to the head commit timestamp so the counter resets on each push.
+            pr = _gh(f"/repos/{repo}/pulls/{pr_number}")
+            head_sha = pr["head"]["sha"]
+            commit = _gh(f"/repos/{repo}/commits/{head_sha}")
+            since = commit["commit"]["committer"]["date"]
         comments = _gh(f"/repos/{repo}/issues/{pr_number}/comments?per_page=100")
         return sum(
             1 for c in comments
