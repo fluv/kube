@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhook-receiver-script
+  namespace: claude
+data:
+  script.py: |
+    """GitHub webhook receiver — verifies HMAC, logs the event.
+
+    v1: smoke-test only. Logs to stdout, returns 204. Future PRs add
+    event-log persistence (for claude-monitor consumption) and a DS-review
+    handler (zuzak/claude#816).
+    """
+    import hashlib
+    import hmac
+    import json
+    import logging
+    import os
+    from datetime import datetime, timezone
+
+    from aiohttp import web
+
+    WEBHOOK_SECRET = os.environ["WEBHOOK_SECRET"].encode()
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    log = logging.getLogger("webhook")
+
+
+    def verify_signature(body: bytes, header):
+        if not header or not header.startswith("sha256="):
+            return False
+        expected = "sha256=" + hmac.new(WEBHOOK_SECRET, body, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, header)
+
+
+    async def github_handler(request):
+        body = await request.read()
+        sig = request.headers.get("X-Hub-Signature-256")
+        if not verify_signature(body, sig):
+            log.warning("hmac_fail remote=%s", request.remote)
+            return web.Response(status=401)
+
+        event = request.headers.get("X-GitHub-Event", "unknown")
+        delivery = request.headers.get("X-GitHub-Delivery", "")
+        payload = json.loads(body)
+        repo = payload.get("repository", {}).get("full_name", "?")
+        action = payload.get("action", "")
+        log.info(
+            "event=%s action=%s repo=%s delivery=%s received_at=%s",
+            event, action, repo, delivery,
+            datetime.now(timezone.utc).isoformat(),
+        )
+        return web.Response(status=204)
+
+
+    async def healthz(request):
+        return web.Response(text="ok")
+
+
+    def main():
+        app = web.Application()
+        app.router.add_post("/github", github_handler)
+        app.router.add_get("/healthz", healthz)
+        web.run_app(app, host="0.0.0.0", port=8080, access_log=None)
+
+
+    if __name__ == "__main__":
+        main()

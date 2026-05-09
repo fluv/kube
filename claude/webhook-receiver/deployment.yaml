@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-receiver
+  namespace: claude
+spec:
+  # Single replica is fine — receiver is stateless v1 (logs only).
+  # When the event-log file is added, this becomes load-bearing
+  # (single writer; multiple replicas would interleave writes).
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-receiver
+  template:
+    metadata:
+      labels:
+        app: webhook-receiver
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - pi.home.arpa
+      containers:
+        - name: webhook-receiver
+          image: python:3.13-slim
+          command: ["/bin/sh", "-c"]
+          # Stock Python image — pip-install aiohttp at startup so we
+          # don't need a custom image build (GitHub Actions billing is
+          # exhausted as of 2026-05-09; promote to a real image once
+          # Actions is back).
+          args:
+            - |
+              set -e
+              pip install --quiet --no-cache-dir aiohttp==3.10.10
+              exec python /app/script.py
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: claude-github-app
+                  key: webhook-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            # pip install needs ~10s on the Pi over the LAN; give the
+            # readiness probe room before it starts polling.
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - name: script
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: script
+          configMap:
+            name: webhook-receiver-script

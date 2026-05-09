@@ -95,6 +95,17 @@ namespace and scrapes personal (non-cluster) metrics. Current scrapers:
 - **Grocy** — home inventory and meal-planning metrics from the `claude-grocy`
   namespace.
 
+## Claude bot infrastructure
+
+The `claude` namespace and its sibling `claude-*` namespaces host the
+infrastructure Claude (the AI assistant the cluster's owner collaborates with)
+relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
+`claude-grocy`, `claude-vestibule`), a Prometheus metrics MCP, and
+`webhook-receiver`, a small aiohttp service exposed publicly at
+`webhook.k3s.fluv.net/github` that receives GitHub App webhooks and
+fans them out to in-cluster handlers (initially: a DeepSeek PR-review
+trigger and a replacement for the polling-based `claude-monitor`).
+
 ## End-user services
 
 We&rsquo;re running a single-user [**Mastodon**](https://joinmastodon.org/) instance on
