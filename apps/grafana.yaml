@@ -29,8 +29,6 @@ spec:
     helm:
       valuesObject:
         priorityClassName: cluster-low
-        nodeSelector:
-          kubernetes.io/hostname: pi.home.arpa
         replicas: 1
         resources:
           requests:
