@@ -1,5 +1,5 @@
-# Claude Code telemetry — separate Prometheus instance, receive-only.
-# Alloy pushes OTLP metrics here via remote_write; no scraping configured.
+# Claude Code telemetry Prometheus — receives OTLP via remote_write from Alloy,
+# and scrapes ServiceMonitors labelled prometheus: claude in the claude namespace.
 # Separated from cluster Prometheus per zuzak/.claude#408.
 apiVersion: v1
 kind: ServiceAccount
@@ -39,7 +39,6 @@ spec:
         resources:
           requests:
             storage: 10Gi
-  # Receive-only: matchLabels that nothing carries, so no scraping happens.
   serviceMonitorSelector:
     matchLabels:
       prometheus: claude

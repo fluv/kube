@@ -264,6 +264,8 @@ kind: ServiceMonitor
 metadata:
   name: github-exporter
   namespace: claude
+  labels:
+    prometheus: claude
 spec:
   namespaceSelector:
     matchNames:
