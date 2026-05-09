@@ -85,7 +85,6 @@ def main():
         return
 
     value = base64.b64encode(config_json.encode()).decode()
-    patch = json.dumps([{"op": "replace", "path": "/data/cluster-config", "value": value}])
     # Use add+replace to handle both first-time creation and updates
     test_get = kubectl("get", "secret", "-n", SECRET_NS, SECRET_NAME,
                        "-o", "jsonpath={.data.cluster-config}")
