@@ -104,6 +104,10 @@ data:
         buckets=[10, 20, 30, 45, 60, 90, 120, 180, 300],
     )
 
+    # Strong reference set — prevents asyncio tasks from being GC'd mid-flight.
+    # Tasks remove themselves via add_done_callback(discard).
+    _background_tasks: set = set()
+
     # --- HMAC ---
 
     def _verify_sig(body: bytes, header: str) -> bool:
@@ -366,16 +370,19 @@ data:
 
         body = response["choices"][0]["message"]["content"]
         actual_model = response.get("model", model)
+
+        # Parse verdict marker from DS response before appending attribution footer;
+        # parsing after would always match the footer line instead.
+        last_line = body.strip().split("\n")[-1]
+        impasse = last_line == "<!-- IMPASSE -->"
+        request_changes = last_line == "<!-- REQUEST CHANGES -->"
+        approve = last_line == "<!-- APPROVE -->"
+
         body += (
             f"\n\n_Reviewed by {actual_model} against "
             f"https://github.com/{repo}/compare/{base_ref}...{head_sha}"
             f" with prior review thread as continuity_"
         )
-
-        last_line = body.strip().split("\n")[-1]
-        impasse = last_line == "<!-- IMPASSE -->"
-        request_changes = last_line == "<!-- REQUEST CHANGES -->"
-        approve = last_line == "<!-- APPROVE -->"
 
         # GitHub rejects APPROVE/REQUEST_CHANGES when submitter == PR author.
         # Fall back to a plain comment for bot-authored PRs; verdict markers are
@@ -460,6 +467,8 @@ data:
                     False, cfg,
                     pr["user"]["login"],
                 ))
+                _background_tasks.add(task)
+                task.add_done_callback(_background_tasks.discard)
                 task.add_done_callback(
                     lambda t: log.error("review task raised: %s", t.exception())
                     if t.exception() else None
@@ -473,6 +482,8 @@ data:
                         _handle_recheck,
                         repo, payload["issue"]["number"], cfg,
                     ))
+                    _background_tasks.add(task)
+                    task.add_done_callback(_background_tasks.discard)
                     task.add_done_callback(
                         lambda t: log.error("recheck task raised: %s", t.exception())
                         if t.exception() else None
