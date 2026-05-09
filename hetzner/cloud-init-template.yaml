@@ -13,6 +13,18 @@
 # These nodes have no public IPv4. Tailscale is installed via apt (pkgs.tailscale.com
 # has AAAA records). An exit node is used temporarily during k3s installation so that
 # GitHub (IPv4-only) is reachable; it is disabled once k3s is running.
+#
+# Access:
+#   - claude (user account, no sudo): ssh as claude with the pi-side kube key for
+#     diagnostic access from the autonomous Claude instance
+#   - root: ssh as root with zuzak's GitHub-listed keys for human admin access
+
+users:
+  - default
+  - name: claude
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICx3FhQP0y+OKUoFw7CMKCsh4yQE/r4A2tC2M/sjWIdz claude@pi.home.arpa-kube
 
 runcmd:
   # Install Tailscale via apt (pkgs.tailscale.com has AAAA records, no IPv4 needed)
@@ -27,6 +39,13 @@ runcmd:
 
   # Wait for Tailscale to assign an IP before attempting to reach the k3s API
   - until tailscale ip -4 2>/dev/null; do sleep 2; done
+
+  # Authorize zuzak's GitHub-listed keys for root ssh login. Each runcmd entry
+  # is its own /bin/sh -c invocation, so no chained && — separate steps.
+  - mkdir -p /root/.ssh
+  - chmod 700 /root/.ssh
+  - curl -fsSL https://github.com/zuzak.keys -o /root/.ssh/authorized_keys
+  - chmod 600 /root/.ssh/authorized_keys
 
   # Join the cluster as an agent node. The provider-id tells the hcloud CCM
   # which Hetzner server this node corresponds to, enabling lifecycle management.
