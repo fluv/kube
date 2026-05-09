@@ -35,15 +35,18 @@ spec:
             instanceType: cx23
             region: hel1
         extraEnv:
-          HCLOUD_IMAGE: ubuntu-24.04
           HCLOUD_PUBLIC_IPV4: "true" # k3s install script needs GitHub which is IPv4 only
         extraEnvSecrets:
           HCLOUD_TOKEN:
             name: hcloud
             key: token
-          HCLOUD_CLOUD_INIT:
+          # HCLOUD_CLUSTER_CONFIG replaces the legacy HCLOUD_CLOUD_INIT + HCLOUD_IMAGE pair.
+          # Carries per-pool cloudInit + labels (incl. kubernetes.io/os=linux so the
+          # autoscaler's template-scheduling check passes for pods that nodeSelect on it).
+          # Rendered by hetzner/update-cluster-config-secret.py.
+          HCLOUD_CLUSTER_CONFIG:
             name: hcloud-init-data
-            key: cloud-init
+            key: cluster-config
         extraArgs:
           scale-down-delay-after-add: 50m
           scale-down-unneeded-time: 5m
