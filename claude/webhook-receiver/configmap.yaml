@@ -103,6 +103,11 @@ data:
         "Seconds from webhook event receipt (post-HMAC) to review posted",
         buckets=[10, 20, 30, 45, 60, 90, 120, 180, 300],
     )
+    repo_snapshot_errors_total = Counter(
+        "webhook_receiver_repo_snapshot_errors_total",
+        "Snapshot pipeline errors by stage",
+        ["stage"],
+    )
 
     # Strong reference set — prevents asyncio tasks from being GC'd mid-flight.
     # Tasks remove themselves via add_done_callback(discard).
@@ -207,6 +212,7 @@ data:
             tree = _gh(f"/repos/{repo}/git/trees/{head_sha}?recursive=1")
         except Exception as e:
             log.warning("repo snapshot tree fetch failed repo=%s: %s", repo, e)
+            repo_snapshot_errors_total.labels(stage="tree").inc()
             return "_(repository snapshot unavailable)_"
 
         chunks = []
@@ -221,6 +227,7 @@ data:
             try:
                 blob = _gh(f"/repos/{repo}/git/blobs/{item['sha']}")
             except Exception:
+                repo_snapshot_errors_total.labels(stage="blob").inc()
                 continue
             try:
                 if blob.get("encoding") == "base64":
@@ -228,6 +235,7 @@ data:
                 else:
                     content = blob.get("content", "")
             except Exception:
+                repo_snapshot_errors_total.labels(stage="decode").inc()
                 continue
             chunk = f"=== {path} ===\n{content}\n"
             if total + len(chunk) > max_bytes:
@@ -545,7 +553,7 @@ data:
     async def metrics_handler(request: web.Request) -> web.Response:
         return web.Response(
             body=generate_latest(),
-            content_type=CONTENT_TYPE_LATEST,
+            headers={"Content-Type": CONTENT_TYPE_LATEST},
         )
 
     async def healthz(request: web.Request) -> web.Response:
