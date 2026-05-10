@@ -7,6 +7,34 @@ metadata:
   name: prometheus-claude
   namespace: claude
 ---
+# prometheus-operator creates this RBAC for kube-prometheus automatically,
+# but not for standalone Prometheus CRs. Without it, Prometheus cannot list
+# services/endpoints/pods and has 0 active scrape targets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-claude
+rules:
+  - apiGroups: [""]
+    resources: [services, endpoints, pods]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-claude
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-claude
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-claude
+    namespace: claude
+---
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
