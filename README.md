@@ -49,6 +49,11 @@ I could feasibly run it on any hardware I might want to extend this cluster to
 in the future. It also came bundled with some integrations out the box that made
 my life easier.
 
+k3s is installed with `--disable=coredns` and `--disable=traefik`. CoreDNS is
+fully managed in this repo under `kube/coredns/` (ConfigMap, ServiceAccount,
+RBAC, DaemonSet, and Service) and deployed by Argo CD — not by the k3s addon
+system. Traefik is replaced by Ingress-Nginx (see below).
+
 We&rsquo;re running [**Argo CD**](https://argo-cd.readthedocs.io/en/stable/),
 which is used to facilitate &ldquo;declarative GitOps&rdquo;: when you push
 some YAML code to this repository, Argo CD will notice the change and will take
