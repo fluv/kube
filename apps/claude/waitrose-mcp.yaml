@@ -8,7 +8,7 @@ metadata:
 spec:
   project: claude
   source:
-    repoURL: https://github.com/zuzak/kube.git
+    repoURL: https://github.com/fluv/kube.git
     path: claude-waitrose-mcp
     targetRevision: HEAD
     directory:

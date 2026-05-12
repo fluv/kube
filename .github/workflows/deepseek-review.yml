@@ -11,7 +11,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: zuzak/deepseek-review-action@main
+      - uses: fluv/deepseek-review-action@main
         with:
           deepseek-api-key: ${{ secrets.DEEPSEEK_API_KEY }}
           label-deadlock: vet:deadlock

@@ -3,7 +3,7 @@
 Namespace hosting a single service:
 
 - **asda-mcp** — MCP server exposing Asda product search via Algolia.
-  Source in [zuzak/asda-mcp](https://github.com/zuzak/asda-mcp).
+  Source in [fluv/asda-mcp](https://github.com/fluv/asda-mcp).
 
 Tools exposed: `search_products`, `get_products_by_cin`, `browse_products`.
 All anonymous — Asda's Algolia search key is a public-facing client key
@@ -16,9 +16,9 @@ data is public and there is no write surface to gate.
 
 ## Prerequisites before this app will run
 
-The `ghcr.io/zuzak/asda-mcp` package must be public for the cluster to pull
+The `ghcr.io/fluv/asda-mcp` package must be public for the cluster to pull
 it without an `imagePullSecret`. GHCR packages inherit the source repo's
-visibility on first publish; if `zuzak/asda-mcp` is still private when the
+visibility on first publish; if `fluv/asda-mcp` is still private when the
 first image is pushed, set the package to public explicitly (GitHub →
 Packages → *asda-mcp* → Package settings → Change visibility → Public).
 

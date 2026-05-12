@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     path: barcodebuddy
-    repoURL: https://github.com/zuzak/kube.git
+    repoURL: https://github.com/fluv/kube.git
     targetRevision: HEAD
     directory:
       recurse: true

@@ -7,7 +7,7 @@ data:
   script.py: |
     """GitHub webhook receiver with DeepSeek PR review handler.
 
-    v3: Adds repo contents snapshot via git tree API (zuzak/kube#268).
+    v3: Adds repo contents snapshot via git tree API (fluv/kube#268).
     v2: Routes pull_request / issue_comment events to the DS pipeline.
     v1: Smoke-test (HMAC verification, logging).
 
@@ -58,14 +58,14 @@ data:
 
     # Per-repo config — mirrors each repo's deepseek-review.yml inputs.
     REPO_CONFIG = {
-        "zuzak/claude": {
+        "fluv/claude": {
             "label_deadlock": "vet:deadlock",
             "skip_prefixes": {"dot-claude/projects/"},
             "exclude_prefixes": {"projects/", "dot-claude/projects/"},
             "model_push": "deepseek-v4-flash",
             "model_recheck": "deepseek-v4-pro",
         },
-        "zuzak/kube": {
+        "fluv/kube": {
             "label_deadlock": "vet:deadlock",
             "skip_prefixes": set(),
             "exclude_prefixes": set(),
@@ -173,7 +173,7 @@ data:
         now = time.time()
         if _prompt_template and now < _prompt_template_fetched_at + PROMPT_TEMPLATE_TTL:
             return _prompt_template
-        data = _gh("/repos/zuzak/deepseek-review-action/contents/prompt-template.md")
+        data = _gh("/repos/fluv/deepseek-review-action/contents/prompt-template.md")
         _prompt_template = base64.b64decode(data["content"]).decode()
         _prompt_template_fetched_at = now
         return _prompt_template

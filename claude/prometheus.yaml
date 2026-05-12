@@ -1,6 +1,6 @@
 # Claude Code telemetry Prometheus — receives OTLP via remote_write from Alloy,
 # and scrapes ServiceMonitors labelled prometheus: claude in the claude namespace.
-# Separated from cluster Prometheus per zuzak/.claude#408.
+# Separated from cluster Prometheus per fluv/claude#408.
 apiVersion: v1
 kind: ServiceAccount
 metadata:

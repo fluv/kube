@@ -8,7 +8,7 @@ metadata:
 spec:
   project: lifestyle
   source:
-    repoURL: https://github.com/zuzak/kube.git
+    repoURL: https://github.com/fluv/kube.git
     path: lifestyle
     targetRevision: HEAD
     directory:

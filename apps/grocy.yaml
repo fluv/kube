@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     path: grocy
-    repoURL: https://github.com/zuzak/kube.git # this repo!
+    repoURL: https://github.com/fluv/kube.git # this repo!
     targetRevision: HEAD
     directory:
       recurse: true
