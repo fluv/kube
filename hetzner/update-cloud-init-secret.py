@@ -13,6 +13,11 @@ By default, ts-auth-key and k3s-token values are read from the existing secret
 (useful when re-rendering after a template change). Pass --authkey and/or
 --token to override.
 
+Migration note: if the cluster secret currently has only a single 'cloud-init'
+field (the old layout), this script will exit with "ts-auth-key or k3s-token
+not found in secret". Bootstrap the new layout by passing --authkey and --token
+explicitly on the first run; subsequent runs can read from the secret as normal.
+
 Usage:
     python3 update-cloud-init-secret.py
     python3 update-cloud-init-secret.py --authkey tskey-auth-... --token K10...
