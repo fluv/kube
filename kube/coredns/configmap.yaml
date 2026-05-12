@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+        }
+        hosts /etc/coredns/NodeHosts {
+          ttl 60
+          reload 15s
+          fallthrough
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf
+        cache 30
+        loop
+        reload
+        loadbalance
+        import /etc/coredns/custom/*.override
+    }
+    import /etc/coredns/custom/*.server
+  NodeHosts: |
+    100.65.99.24 hetz-cx23-nbg1-696cb1e2629998ea
+    100.88.61.85 hetz-cx23-fsn1-3d4f6b7b52b71a92
+    100.95.187.35 saraneth
+    100.102.21.87 pi.home.arpa
+    fd7a:115c:a1e0::434:3d55 hetz-cx23-fsn1-3d4f6b7b52b71a92
+    fd7a:115c:a1e0::4334:6318 hetz-cx23-nbg1-696cb1e2629998ea
