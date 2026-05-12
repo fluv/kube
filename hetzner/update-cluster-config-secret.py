@@ -9,7 +9,7 @@ and writes the resulting cluster-config JSON to data.cluster-config of the
 same secret.
 
 Per-pool labels include kubernetes.io/os=linux so the autoscaler's template
-scheduling check passes for pods that nodeSelect on it (zuzak/kube#258).
+scheduling check passes for pods that nodeSelect on it (fluv/kube#258).
 
 Never prints secret values. Usage:
     python3 update-cluster-config-secret.py

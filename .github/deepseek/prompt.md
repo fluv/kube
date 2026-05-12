@@ -1,5 +1,5 @@
 This is the GitOps repository for a personal Kubernetes cluster
-(`zuzak/kube`). It is a two-node k3s cluster with one Raspberry Pi 5 (`pi`)
+(`fluv/kube`). It is a two-node k3s cluster with one Raspberry Pi 5 (`pi`)
 running general workloads and one Bitfolk VPS (`saraneth`) running ingress
 and some non-k8s services. Argo CD reconciles applications declared in this
 repository against the cluster.

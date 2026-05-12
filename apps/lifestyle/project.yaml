@@ -9,7 +9,7 @@ spec:
     - namespace: lifestyle
       server: https://kubernetes.default.svc
   sourceRepos:
-    - https://github.com/zuzak/kube.git
+    - https://github.com/fluv/kube.git
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

@@ -4,10 +4,10 @@ Namespace hosting two coupled services:
 
 - **vestibule** — internal HTTP proxy that holds upstream credentials and
   enforces politeness toward upstream APIs. ClusterIP only; no ingress.
-  See [zuzak/vestibule](https://github.com/zuzak/vestibule).
+  See [fluv/vestibule](https://github.com/fluv/vestibule).
 - **vestibule-mcp** — public-facing MCP server. Reads vestibule's
   `/_manifest` at startup and exposes declared endpoints as MCP tools.
-  See [zuzak/vestibule/mcp](https://github.com/zuzak/vestibule/tree/main/mcp).
+  See [fluv/vestibule/mcp](https://github.com/fluv/vestibule/tree/main/mcp).
 
 The MCP is the product; vestibule is its dependency. Claude Chat (and
 any other MCP client on the allowlist) connects to the MCP ingress, not
@@ -73,7 +73,7 @@ rm ./vestibule-mcp.htpasswd
 
 ### 3. Make the GHCR packages public (first deploy only)
 
-Both `ghcr.io/zuzak/vestibule` and `ghcr.io/zuzak/vestibule-mcp` need to
+Both `ghcr.io/fluv/vestibule` and `ghcr.io/fluv/vestibule-mcp` need to
 be public for the cluster to pull without an `imagePullSecret`. GHCR
 packages inherit the source repository's visibility on first publish;
 until the vestibule repo is made public, each package needs to be set

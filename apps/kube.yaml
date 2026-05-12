@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/zuzak/kube.git # this repo!
+    repoURL: https://github.com/fluv/kube.git # this repo!
     path: kube
     targetRevision: HEAD
     directory:

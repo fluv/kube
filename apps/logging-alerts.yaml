@@ -15,7 +15,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: loki
   source:
-    repoURL: https://github.com/zuzak/kube.git
+    repoURL: https://github.com/fluv/kube.git
     path: logging-alerts
     targetRevision: HEAD
     directory:

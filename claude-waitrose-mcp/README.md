@@ -4,7 +4,7 @@ Namespace hosting a single service:
 
 - **waitrose-mcp** — MCP server exposing Waitrose product search and
   (once credentials are supplied) authenticated tools. Source in
-  [zuzak/waitrose-mcp](https://github.com/zuzak/waitrose-mcp).
+  [fluv/waitrose-mcp](https://github.com/fluv/waitrose-mcp).
 
 Tools exposed: `search_products`, `browse_products`,
 `get_products_by_line_numbers`, `get_promotion_products`. Authenticated
@@ -64,9 +64,9 @@ the annotations within a minute.
 
 ## Prerequisites before this app will run
 
-The `ghcr.io/zuzak/waitrose-mcp` package must be public for the cluster to
+The `ghcr.io/fluv/waitrose-mcp` package must be public for the cluster to
 pull it without an `imagePullSecret`. GHCR packages inherit the source
-repository's visibility on first publish; if the `zuzak/waitrose-mcp`
+repository's visibility on first publish; if the `fluv/waitrose-mcp`
 repo is still private when the first image is pushed, the package needs
 to be set to public explicitly (GitHub → Packages → *waitrose-mcp* →
 Package settings → Change visibility → Public). Same pattern as
