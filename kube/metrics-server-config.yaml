@@ -1,0 +1,9 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: metrics-server
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    nodeSelector:
+      kubernetes.io/hostname: pi.home.arpa
