@@ -204,6 +204,21 @@ subjects:
     name: claude
     namespace: claude
 ---
+# Grant write access in the claude-printer-mcp namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude
+  namespace: claude-printer-mcp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-namespace-admin
+subjects:
+  - kind: ServiceAccount
+    name: claude
+    namespace: claude
+---
 # Grant pod-recycle access in longhorn-system. Needed for stale-IP
 # recovery on Longhorn DaemonSets (longhorn-manager, longhorn-csi-plugin,
 # engine-image) after CNI/networking changes.
