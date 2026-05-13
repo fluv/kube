@@ -3,7 +3,7 @@ webhook-receiver
 
 GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3s.fluv.net/github/deepseek`.
 
-Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `deepseek-reviewer[bot]`.
+Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `fluv-deepseek[bot]`.
 
 v4 (current): migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.
 v3: adds repo contents snapshot via git tree API (fluv/kube#268).
@@ -43,10 +43,9 @@ The pod starts without it (`optional: true`) but DS reviews are skipped.
 Re-requesting a review
 ----------------------
 
-After pushing fixes in response to DS findings, trigger a re-review by requesting a review from `deepseek-reviewer[bot]`:
+After pushing fixes in response to DS findings, trigger a re-review by requesting a review from `fluv-deepseek[bot]`:
 
-- **GitHub UI**: click the re-request button (↺) next to `deepseek-reviewer` in the Reviewers panel
-- **CLI**: `gh pr edit <PR> --repo <owner/repo> --add-reviewer deepseek-reviewer[bot]`
+- **CLI**: `github-app api repos/{repo}/pulls/{N}/requested_reviewers --method POST -f "reviewers[]=fluv-deepseek[bot]"`
 
 This fires a `pull_request.review_requested` event to the receiver.
 
