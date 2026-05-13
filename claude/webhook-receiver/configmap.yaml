@@ -61,7 +61,9 @@ data:
         "fluv/kube": {
             "label_deadlock": "vet:deadlock",
             "skip_prefixes": set(),
-            "exclude_prefixes": set(),
+            # Exclude the webhook receiver script itself — it contains DS template
+            # placeholder strings that confuse DS's own prompt-building step.
+            "exclude_prefixes": {"claude/webhook-receiver/"},
             "model_push": "deepseek-reasoner",
             "model_recheck": "deepseek-reasoner",
         },
@@ -213,9 +215,9 @@ data:
 
     def _get_repo_snapshot(repo: str, head_sha: str, exclude_prefixes: set,
                            max_bytes: int = 400_000) -> str:
-        """Fetch repo files at head_sha for {{REPO_CONTENTS}}. Mirrors the
-        action's snapshot: 400KB cap, paths sorted, =/= header per file,
-        truncation note at the end. Skips paths matching any exclude prefix."""
+        """Fetch repo files at head_sha for the repo-contents prompt snapshot.
+        400KB cap, paths sorted, file-header per entry, truncation note at end.
+        Skips paths matching any exclude prefix."""
         try:
             tree = _gh(f"/repos/{repo}/git/trees/{head_sha}?recursive=1")
         except Exception as e:

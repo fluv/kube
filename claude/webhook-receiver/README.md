@@ -1,56 +1,74 @@
 webhook-receiver
 ================
 
-GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3s.fluv.net/github`.
+GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3s.fluv.net/github/deepseek`.
 
-v3 (current): adds repo contents snapshot via git tree API (fluv/kube#268). DS now sees the full repo at HEAD (capped at 400KB, with per-repo `exclude_prefixes` honoured) alongside patch + prior thread. Per-repo `exclude_prefixes` lives in `REPO_CONFIG` inside `script.py`; e.g. `fluv/claude` skips `projects/` and `dot-claude/projects/`, `fluv/kube` skips nothing.
+Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `deepseek-reviewer[bot]`.
 
-v2: routes `pull_request` and `issue_comment` events to a DeepSeek PR review pipeline (fluv/claude#816). Reviews posted under `claude-zuzak[bot]` using the existing GitHub App credentials.
+v4 (current): migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.  
+v3: adds repo contents snapshot via git tree API (fluv/kube#268).  
+v2: routes `pull_request` events to DeepSeek PR review pipeline (fluv/claude#816).  
+v1: HMAC verification and logging only.
 
-Why a stock python image
-------------------------
+Credentials
+-----------
 
-The deployment uses `python:3.13-slim` and pip-installs `aiohttp PyJWT cryptography` at startup, rather than a baked image. Reason: GitHub Actions billing was exhausted when this was first deployed. Promote to a proper image once Actions is back.
+The receiver reads from the `deepseek-reviewer-app` k8s secret in the `claude` namespace:
 
-Updating the script
--------------------
+| Key | Value |
+|---|---|
+| `app-id` | GitHub App ID (or client ID — both work since Oct 2024) |
+| `private-key` | PEM private key downloaded from App settings |
+| `webhook-secret` | Random string matching the App's webhook secret config |
 
-The Python source is inlined into `configmap.yaml`. After editing, push to main and trigger an Argo sync. The pod does **not** automatically restart on ConfigMap changes — kick it manually:
+Installation ID is discovered automatically at first token exchange — no `installation-id` key needed.
 
-    kubectl -n claude rollout restart deployment webhook-receiver
+Create the secret:
 
-Or scale 0→1 if your RBAC doesn't include `rollout restart`.
-
-Webhook secret
---------------
-
-The receiver reads `WEBHOOK_SECRET` from the `claude-github-app` k8s secret (key `webhook-secret`). Generate with `openssl rand -hex 32` and patch into the secret:
-
-    kubectl -n claude patch secret claude-github-app --type=json \
-      -p='[{"op":"add","path":"/data/webhook-secret","value":"'"$(openssl rand -hex 32 | base64 -w0)"'"}]'
-
-Configure the same value as the webhook secret on the GitHub App settings page.
+    kubectl -n claude create secret generic deepseek-reviewer-app \
+      --from-literal=app-id=<app-id-or-client-id> \
+      --from-file=private-key=./deepseek-reviewer.private-key.pem \
+      --from-literal=webhook-secret=<webhook-secret>
 
 DeepSeek API key
 ----------------
 
-DS reviews require a `deepseek` k8s secret with an `api-key` field. Create it with:
+DS reviews require a `deepseek` k8s secret with an `api-key` field:
 
     kubectl -n claude create secret generic deepseek \
       --from-literal=api-key=<your-deepseek-api-key>
 
-The pod starts without it (env var is `optional: true`) but DS reviews are skipped — the startup log will say "DS review disabled".
+The pod starts without it (`optional: true`) but DS reviews are skipped.
 
-Self-review behaviour
----------------------
+Re-requesting a review
+----------------------
 
-GitHub rejects `APPROVE` and `REQUEST_CHANGES` reviews when the reviewer is the PR author. When `claude-zuzak[bot]` opens a PR, the DS pipeline falls back to posting the review body as a plain issue comment rather than a formal review. The verdict markers (`<!-- APPROVE -->` etc.) are preserved in the comment text so author-side parsing still works. No Reviews-tab verdict appears for bot-authored PRs — this is expected and not a bug.
+After pushing fixes in response to DS findings, trigger a re-review by requesting a review from `deepseek-reviewer[bot]`:
+
+- **GitHub UI**: click the re-request button (↺) next to `deepseek-reviewer` in the Reviewers panel
+- **CLI**: `gh pr edit <PR> --repo <owner/repo> --add-reviewer deepseek-reviewer[bot]`
+
+This fires a `pull_request.review_requested` event to the receiver.
+
+Updating the script
+-------------------
+
+The Python source is inlined into `configmap.yaml`. After editing, push to main and trigger an Argo sync. The pod does **not** restart automatically on ConfigMap changes — restart it:
+
+    kubectl -n claude rollout restart deployment webhook-receiver
+
+Or scale 0→1 if RBAC doesn't cover `rollout restart`.
 
 Smoke test
 ----------
 
-After the App webhook is configured and the DeepSeek secret is in place, push a commit to any installed repo. Pod logs:
+After the App webhook is configured and secrets are in place, push a commit to any installed repo. Check pod logs:
 
     kubectl -n claude logs deploy/webhook-receiver --tail=20
 
-Look for `ds_review` then `calling deepseek` then `review posted`. Re-deliveries can be triggered from the App's Recent Deliveries panel.
+Look for `ds_review` → `calling deepseek` → `review posted`. Re-deliveries can be triggered from the App's Recent Deliveries panel at `github.com/settings/apps/deepseek-reviewer`.
+
+Why a stock Python image
+------------------------
+
+The deployment uses `python:3.13-slim` and pip-installs `aiohttp PyJWT cryptography` at startup. Promote to a baked image once GitHub Actions billing allows (tracked in #816).
