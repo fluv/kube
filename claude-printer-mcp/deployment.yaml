@@ -28,8 +28,15 @@ spec:
       # the kubelet chown /data to gid 1000 on pod start so the process
       # can write per-job state once the implementation lands. Mirrors the
       # claude-notebook pattern.
+      #
+      # runAsNonRoot + runAsUser are belt-and-braces: the upstream Dockerfile
+      # already drops to uid 1000 via USER app, but pinning both at the pod
+      # level means the kubelet refuses to start the container if a future
+      # image regression ever loses the USER directive.
       securityContext:
         fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
