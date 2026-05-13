@@ -23,7 +23,7 @@ spec:
                     values: [pi.home.arpa]
       containers:
         - name: tagger
-          image: docker.io/bitnami/kubectl@sha256:e2b97dde9666986c61c56d49aae85a714b89b69392baa531438e74ec34096fb4
+          image: registry.k8s.io/kubectl:v1.33.5
           command: [sh, -c]
           args:
             - |
