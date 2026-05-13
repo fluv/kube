@@ -23,6 +23,13 @@ spec:
       labels:
         app: printer-mcp
     spec:
+      # Longhorn provisions PVCs owned by root, but the printer-mcp image
+      # runs as uid 1000 (see fluv/printer-mcp Dockerfile). fsGroup makes
+      # the kubelet chown /data to gid 1000 on pod start so the process
+      # can write per-job state once the implementation lands. Mirrors the
+      # claude-notebook pattern.
+      securityContext:
+        fsGroup: 1000
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
