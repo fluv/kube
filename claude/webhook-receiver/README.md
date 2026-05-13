@@ -5,9 +5,9 @@ GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3
 
 Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `deepseek-reviewer[bot]`.
 
-v4 (current): migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.  
-v3: adds repo contents snapshot via git tree API (fluv/kube#268).  
-v2: routes `pull_request` events to DeepSeek PR review pipeline (fluv/claude#816).  
+v4 (current): migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.
+v3: adds repo contents snapshot via git tree API (fluv/kube#268).
+v2: routes `pull_request` events to DeepSeek PR review pipeline (fluv/claude#816).
 v1: HMAC verification and logging only.
 
 Credentials
