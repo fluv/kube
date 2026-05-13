@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: printer-mcp
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: claude
+  source:
+    repoURL: https://github.com/fluv/kube.git
+    path: claude-printer-mcp
+    targetRevision: HEAD
+    directory:
+      recurse: true
+  destination:
+    namespace: claude-printer-mcp
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

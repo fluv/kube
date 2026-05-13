@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: printer-mcp
+  namespace: claude-printer-mcp
+spec:
+  # Single-replica + Recreate is load-bearing.
+  #
+  # Recreate required — server holds in-flight print job state.
+  #
+  # Do not raise `replicas` or switch the strategy to RollingUpdate
+  # without first redesigning the storage layer.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: printer-mcp
+  template:
+    metadata:
+      labels:
+        app: printer-mcp
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - pi.home.arpa
+      containers:
+        - name: printer-mcp
+          image: ghcr.io/fluv/printer-mcp:main
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: printer-mcp-data
