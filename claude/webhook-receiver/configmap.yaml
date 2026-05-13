@@ -39,16 +39,15 @@ data:
 
     WEBHOOK_SECRET = os.environ["WEBHOOK_SECRET"].encode()
     APP_ID = os.environ.get("GITHUB_APP_ID", "")
-    INSTALLATION_ID = os.environ.get("GITHUB_INSTALLATION_ID", "")
     PRIVATE_KEY = os.environ.get("GITHUB_PRIVATE_KEY", "")
     DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
     BOT_LOGIN = os.environ.get("BOT_LOGIN", "claude-zuzak[bot]")
     PROMPT_TEMPLATE_TTL = 3600  # seconds
 
-    DS_ENABLED = bool(APP_ID and INSTALLATION_ID and PRIVATE_KEY and DEEPSEEK_API_KEY)
+    DS_ENABLED = bool(APP_ID and PRIVATE_KEY and DEEPSEEK_API_KEY)
     if not DS_ENABLED:
-        log.warning("DS review disabled — GITHUB_APP_ID / GITHUB_INSTALLATION_ID / "
-                    "GITHUB_PRIVATE_KEY / DEEPSEEK_API_KEY not all set")
+        log.warning("DS review disabled — GITHUB_APP_ID / GITHUB_PRIVATE_KEY / "
+                    "DEEPSEEK_API_KEY not all set")
 
     # Per-repo config — mirrors each repo's deepseek-review.yml inputs.
     REPO_CONFIG = {
@@ -119,6 +118,7 @@ data:
 
     _gh_token: str = ""
     _gh_token_expiry: float = 0.0
+    _installation_id: str = ""
 
     def _make_jwt() -> str:
         now = int(time.time())
@@ -128,13 +128,27 @@ data:
             algorithm="RS256",
         )
 
+    def _discover_installation_id() -> str:
+        j = _make_jwt()
+        req = urllib.request.Request("https://api.github.com/app/installations")
+        req.add_header("Authorization", f"Bearer {j}")
+        req.add_header("Accept", "application/vnd.github.v3+json")
+        req.add_header("User-Agent", "zuzak-webhook-receiver/2.0")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            installations = json.load(resp)
+        if not installations:
+            raise RuntimeError("No installations found for this GitHub App")
+        return str(installations[0]["id"])
+
     def _get_gh_token() -> str:
-        global _gh_token, _gh_token_expiry
+        global _gh_token, _gh_token_expiry, _installation_id
         now = time.time()
         if _gh_token and now < _gh_token_expiry - 120:
             return _gh_token
+        if not _installation_id:
+            _installation_id = _discover_installation_id()
         j = _make_jwt()
-        url = f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens"
+        url = f"https://api.github.com/app/installations/{_installation_id}/access_tokens"
         req = urllib.request.Request(url, method="POST", data=b"{}")
         req.add_header("Authorization", f"Bearer {j}")
         req.add_header("Accept", "application/vnd.github.v3+json")
