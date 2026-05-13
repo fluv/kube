@@ -43,8 +43,6 @@ data:
     PRIVATE_KEY = os.environ.get("GITHUB_PRIVATE_KEY", "")
     DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
     BOT_LOGIN = os.environ.get("BOT_LOGIN", "claude-zuzak[bot]")
-    RECHECK_PREFIX = "/ds-recheck"
-    MAX_RECHECKS = 2
     PROMPT_TEMPLATE_TTL = 3600  # seconds
 
     DS_ENABLED = bool(APP_ID and INSTALLATION_ID and PRIVATE_KEY and DEEPSEEK_API_KEY)
@@ -257,26 +255,6 @@ data:
         labels = [lb["name"] for lb in pr.get("labels", [])]
         return ", ".join(labels) if labels else "(none)"
 
-    def _count_rechecks(repo: str, pr_number: int) -> int:
-        """Count /ds-recheck comments since the last DS bot review."""
-        reviews = _gh(f"/repos/{repo}/pulls/{pr_number}/reviews?per_page=100")
-        ds_reviews = [r for r in reviews if r["user"]["login"] == BOT_LOGIN]
-        since = max((r["submitted_at"] for r in ds_reviews), default="")
-        if not since:
-            # Bot-authored PRs: DS cannot submit formal reviews (GitHub returns 422 on
-            # self-review), so ds_reviews is always empty and the cursor stays at "".
-            # Fall back to the head commit timestamp so the counter resets on each push.
-            pr = _gh(f"/repos/{repo}/pulls/{pr_number}")
-            head_sha = pr["head"]["sha"]
-            commit = _gh(f"/repos/{repo}/commits/{head_sha}")
-            since = commit["commit"]["committer"]["date"]
-        comments = _gh(f"/repos/{repo}/issues/{pr_number}/comments?per_page=100")
-        return sum(
-            1 for c in comments
-            if c["body"].startswith(RECHECK_PREFIX)
-            and (not since or c["created_at"] > since)
-        )
-
     def _dismiss_changes_requested(repo: str, pr_number: int) -> None:
         reviews = _gh(f"/repos/{repo}/pulls/{pr_number}/reviews?per_page=100")
         for r in reviews:
@@ -296,7 +274,7 @@ data:
         try:
             _gh(f"/repos/{repo}/labels", method="POST", body={
                 "name": label, "color": "B60205",
-                "description": "DS/author impasse or recheck cap reached",
+                "description": "DS/author impasse",
             })
         except urllib.error.HTTPError as e:
             if e.code != 422:  # 422 = label already exists; anything else is unexpected
@@ -334,22 +312,6 @@ data:
             start = time.monotonic()
         log.info("ds_review repo=%s pr=%d head=%.8s recheck=%s author=%s",
                  repo, pr_number, head_sha, is_recheck, pr_author)
-
-        if is_recheck:
-            n = _count_rechecks(repo, pr_number)
-            if n > MAX_RECHECKS:
-                log.info("recheck cap n=%d pr=%d", n, pr_number)
-                _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
-                try:
-                    _gh(f"/repos/{repo}/issues/{pr_number}/comments",
-                        method="POST",
-                        body={"body": (
-                            f"DS recheck cap reached ({MAX_RECHECKS}). "
-                            "No further reviews will be posted until a new commit is pushed."
-                        )})
-                except Exception as e:
-                    log.warning("cap notice post failed pr=%d: %s", pr_number, e)
-                return
 
         try:
             patch = _get_patch(repo, base_ref, head_sha)
@@ -475,18 +437,6 @@ data:
         log.info("review posted pr=%d verdict=%s model=%s elapsed=%.1fs",
                  pr_number, verdict, actual_model, elapsed)
 
-    def _handle_recheck(repo: str, pr_number: int, cfg: dict,
-                        start: float = 0.0) -> None:
-        try:
-            pr = _gh(f"/repos/{repo}/pulls/{pr_number}")
-            _review_pr(repo, pr_number,
-                       pr["head"]["sha"], pr["base"]["ref"],
-                       True, cfg,
-                       pr_author=pr["user"]["login"],
-                       start=start)
-        except Exception as e:
-            log.error("recheck failed repo=%s pr=%d: %s", repo, pr_number, e)
-
     # --- HTTP handlers ---
 
     async def github_handler(request: web.Request) -> web.Response:
@@ -529,22 +479,23 @@ data:
                     if t.exception() else None
                 )
 
-            elif (event == "issue_comment" and action == "created"
-                  and "pull_request" in payload.get("issue", {})):
-                comment_body = payload.get("comment", {}).get("body", "")
-                if comment_body.startswith(RECHECK_PREFIX):
-                    event_start = time.monotonic()
-                    task = asyncio.create_task(asyncio.to_thread(
-                        _handle_recheck,
-                        repo, payload["issue"]["number"], cfg,
-                        event_start,
-                    ))
-                    _background_tasks.add(task)
-                    task.add_done_callback(_background_tasks.discard)
-                    task.add_done_callback(
-                        lambda t: log.error("recheck task raised: %s", t.exception())
-                        if t.exception() else None
-                    )
+            elif (event == "pull_request" and action == "review_requested"
+                  and payload.get("requested_reviewer", {}).get("login") == BOT_LOGIN):
+                pr = payload["pull_request"]
+                event_start = time.monotonic()
+                task = asyncio.create_task(asyncio.to_thread(
+                    _review_pr,
+                    repo, pr["number"], pr["head"]["sha"], pr["base"]["ref"],
+                    True, cfg,
+                    pr["user"]["login"],
+                    event_start,
+                ))
+                _background_tasks.add(task)
+                task.add_done_callback(_background_tasks.discard)
+                task.add_done_callback(
+                    lambda t: log.error("review task raised: %s", t.exception())
+                    if t.exception() else None
+                )
 
         return web.Response(status=204)
 
