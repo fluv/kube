@@ -45,6 +45,10 @@ spec:
                 --type=merge --patch "$PATCH"
               echo "tagged all disks on $NODE_NAME as durable"
               exec sleep infinity
+          resources:
+            requests:
+              cpu: 1m
+              memory: 20Mi
           env:
             - name: NODE_NAME
               valueFrom:
