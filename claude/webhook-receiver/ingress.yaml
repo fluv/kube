@@ -16,7 +16,7 @@ spec:
     - host: webhook.k3s.fluv.net
       http:
         paths:
-          - path: /github
+          - path: /github/deepseek
             pathType: Exact
             backend:
               service:
