@@ -44,23 +44,25 @@ spec:
             - name: WEBHOOK_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: claude-github-app
+                  name: deepseek-reviewer-app
                   key: webhook-secret
             - name: GITHUB_APP_ID
               valueFrom:
                 secretKeyRef:
-                  name: claude-github-app
+                  name: deepseek-reviewer-app
                   key: app-id
             - name: GITHUB_INSTALLATION_ID
               valueFrom:
                 secretKeyRef:
-                  name: claude-github-app
+                  name: deepseek-reviewer-app
                   key: installation-id
             - name: GITHUB_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
-                  name: claude-github-app
+                  name: deepseek-reviewer-app
                   key: private-key
+            - name: BOT_LOGIN
+              value: deepseek-reviewer[bot]
             - name: DEEPSEEK_API_KEY
               valueFrom:
                 secretKeyRef:

@@ -7,18 +7,14 @@ data:
   script.py: |
     """GitHub webhook receiver with DeepSeek PR review handler.
 
+    v4: Migrates to dedicated deepseek-reviewer GitHub App (org-wide installation).
     v3: Adds repo contents snapshot via git tree API (fluv/kube#268).
     v2: Routes pull_request / issue_comment events to the DS pipeline.
     v1: Smoke-test (HMAC verification, logging).
 
-    DS reviews post as GitHub PR reviews under claude-zuzak[bot]. The
+    DS reviews post as GitHub PR reviews under deepseek-reviewer[bot]. The
     DeepSeek API key is optional — pod starts normally without it but DS
     reviews are skipped.
-
-    Identity note: claude-zuzak[bot] cannot APPROVE/REQUEST_CHANGES on PRs
-    it authored (GitHub 422). For bot-authored PRs, verdicts are posted as
-    plain comments (text preserved for author-side parsing). Human-authored
-    PRs receive proper APPROVE/REQUEST_CHANGES reviews.
     """
     import asyncio
     import base64
@@ -445,21 +441,15 @@ data:
             f" with prior review thread as continuity_"
         )
 
-        # GitHub rejects APPROVE/REQUEST_CHANGES when submitter == PR author.
-        # Fall back to a plain comment for bot-authored PRs; verdict markers are
-        # preserved in the text for the author Claude to parse.
-        is_self_review = (pr_author == BOT_LOGIN)
-
-        if not request_changes and not impasse and not is_self_review:
+        if not request_changes and not impasse:
             _dismiss_changes_requested(repo, pr_number)
 
         verdict = ("impasse" if impasse else "request_changes" if request_changes
                    else "approve" if approve else "comment")
 
         try:
-            if impasse or is_self_review:
-                if impasse:
-                    _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
+            if impasse:
+                _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
                 _gh(f"/repos/{repo}/issues/{pr_number}/comments",
                     method="POST", body={"body": body})
             elif request_changes:
