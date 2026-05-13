@@ -426,8 +426,9 @@ data:
         try:
             if impasse:
                 _apply_label(repo, pr_number, cfg.get("label_deadlock", ""))
-                _gh(f"/repos/{repo}/issues/{pr_number}/comments",
-                    method="POST", body={"body": body})
+                _gh(f"/repos/{repo}/pulls/{pr_number}/reviews",
+                    method="POST",
+                    body={"commit_id": head_sha, "body": body, "event": "COMMENT"})
             elif request_changes:
                 _gh(f"/repos/{repo}/pulls/{pr_number}/reviews",
                     method="POST",
