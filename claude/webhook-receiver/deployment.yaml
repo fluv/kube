@@ -57,7 +57,7 @@ spec:
                   name: deepseek-reviewer-app
                   key: private-key
             - name: BOT_LOGIN
-              value: deepseek-reviewer[bot]
+              value: fluv-deepseek[bot]
             - name: DEEPSEEK_API_KEY
               valueFrom:
                 secretKeyRef:
