@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notebook
+  namespace: claude-notebook
+spec:
+  # Single-replica + Recreate is load-bearing.
+  #
+  # Notebook is a single-writer JSONL appender backed by a RWO PVC. Two
+  # pods cannot mount the volume concurrently (RWO), and overlapping
+  # writers during a RollingUpdate cutover would corrupt the JSONL
+  # mid-flight. Recreate ensures the old pod is gone before the new one
+  # starts.
+  #
+  # Do not raise `replicas` or switch the strategy to RollingUpdate
+  # without first redesigning the storage layer.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: notebook
+  template:
+    metadata:
+      labels:
+        app: notebook
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - pi.home.arpa
+      containers:
+        - name: notebook
+          image: ghcr.io/fluv/notebook:main
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: notebook-data

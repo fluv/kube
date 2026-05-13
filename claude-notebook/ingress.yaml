@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notebook
+  namespace: claude-notebook
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    # Basic auth at the ingress. The notebook-auth Secret (htpasswd) is
+    # applied out-of-band — see README. Mirrors claude-vestibule, claude-grocy.
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: notebook-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+    # Streamable HTTP MCP wants chunked responses unbuffered and longer
+    # read/write timeouts. Same pattern as claude-vestibule and claude-grocy.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: notebook.mcp.k3s.fluv.net
+      http:
+        paths:
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: notebook
+                port:
+                  name: http
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: notebook
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - notebook.mcp.k3s.fluv.net
+      secretName: notebook-k3s-fluv-net-tls

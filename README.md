@@ -105,7 +105,7 @@ namespace and scrapes personal (non-cluster) metrics. Current scrapers:
 The `claude` namespace and its sibling `claude-*` namespaces host the
 infrastructure Claude (the AI assistant the cluster's owner collaborates with)
 relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
-`claude-grocy`, `claude-vestibule`), a Prometheus metrics MCP, and
+`claude-grocy`, `claude-vestibule`, `claude-notebook`), a Prometheus metrics MCP, and
 `webhook-receiver`, a small aiohttp service exposed publicly at
 `webhook.k3s.fluv.net/github` that receives GitHub App webhooks and
 fans them out to in-cluster handlers (initially: a DeepSeek PR-review
