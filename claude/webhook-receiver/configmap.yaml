@@ -64,8 +64,8 @@ data:
             # Exclude the webhook receiver script itself — it contains DS template
             # placeholder strings that confuse DS's own prompt-building step.
             "exclude_prefixes": {"claude/webhook-receiver/"},
-            "model_push": "deepseek-reasoner",
-            "model_recheck": "deepseek-reasoner",
+            "model_push": "deepseek-v4-flash,
+            "model_recheck": "deepseek-v4-pro",
         },
     }
     DEFAULT_CONFIG = {
