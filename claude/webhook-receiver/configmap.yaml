@@ -41,7 +41,7 @@ data:
     APP_ID = os.environ.get("GITHUB_APP_ID", "")
     PRIVATE_KEY = os.environ.get("GITHUB_PRIVATE_KEY", "")
     DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-    BOT_LOGIN = os.environ.get("BOT_LOGIN", "claude-zuzak[bot]")
+    BOT_LOGIN = os.environ.get("BOT_LOGIN", "deepseek-reviewer[bot]")
     PROMPT_TEMPLATE_TTL = 3600  # seconds
 
     DS_ENABLED = bool(APP_ID and PRIVATE_KEY and DEEPSEEK_API_KEY)
