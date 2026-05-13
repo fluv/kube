@@ -8,7 +8,6 @@ metadata:
       a Longhorn storage class that avoids using SD cards
 parameters:
   diskSelector: durable
-  numberOfReplicas: "1"
 provisioner: driver.longhorn.io
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
