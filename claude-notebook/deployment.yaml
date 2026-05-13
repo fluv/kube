@@ -25,6 +25,12 @@ spec:
       labels:
         app: notebook
     spec:
+      # The distroless:nonroot base image runs as uid:gid 65532:65532, but
+      # Longhorn provisions PVCs owned by root. Set fsGroup so the kubelet
+      # chowns the mount to gid 65532 on pod start, making /data writable
+      # by the notebook process.
+      securityContext:
+        fsGroup: 65532
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
