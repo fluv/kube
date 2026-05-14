@@ -140,7 +140,13 @@ spec:
           enabled: false
         cleanPrometheusOperatorObjectNames: true
         defaultRules:
-          create: false
+          create: true
+          rules:
+            etcd: false
+            kubeProxy: false
+            kubeSchedulerAlerting: false
+            kubeSchedulerRecording: false
+            kubeControllerManager: false
   syncPolicy:
     automated:
       prune: true
