@@ -11,6 +11,7 @@ This is a GitOps repository for a personal two-node k3s cluster managed by Argo 
 
 Nodes are connected via Tailscale. The k3s datastore is PostgreSQL on `saraneth`.
 Additional ephemeral nodes in Hetzner Cloud are provisioned when required by an autoscaler.
+Tailscale is configured so that any node can hit the 192.168.1.0/24 domestic home network.
 
 ## Grafana dashboards
 
