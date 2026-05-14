@@ -10,6 +10,7 @@ This is a GitOps repository for a personal two-node k3s cluster managed by Argo 
 | `pi.home.arpa` | Raspberry Pi 5, arm64, 8GB RAM | Primary workload node |
 
 Nodes are connected via Tailscale. The k3s datastore is PostgreSQL on `saraneth`.
+Additional ephemeral nodes in Hetzner Cloud are provisioned when required by an autoscaler.
 
 ## Grafana dashboards
 
@@ -27,7 +28,7 @@ All cluster state goes through Argo CD. If something needs to exist in the clust
 
 Exception: secrets are not stored in git. Claude has secret write access in its own namespaces only (see `claude/rbac.yaml`).
 
-Push to `main` and Argo CD will sync automatically. To apply immediately, trigger a sync in the Argo CD UI.
+Push to `main` and Argo CD will sync automatically.
 
 When adding helm values to an Application manifest, place them under
 `spec.source.helm.values`.
