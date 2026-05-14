@@ -86,6 +86,13 @@ spec:
                 memory: 1Gi
             podMonitorSelectorNilUsesHelmValues: false
             serviceMonitorSelectorNilUsesHelmValues: false
+            startupProbe:
+              failureThreshold: 60
+              periodSeconds: 15
+            livenessProbe:
+              initialDelaySeconds: 0
+              failureThreshold: 10
+              periodSeconds: 30
             storageSpec:
               volumeClaimTemplate:
                 spec:
