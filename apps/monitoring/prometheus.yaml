@@ -144,6 +144,8 @@ spec:
           rules:
             etcd: false
             kubeProxy: false
+            kubeApiserverBurnrate: false
+            kubeApiserverSlos: false
             kubeSchedulerAlerting: false
             kubeSchedulerRecording: false
             kubeControllerManager: false

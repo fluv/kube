@@ -11,8 +11,8 @@ metadata:
   namespace: claude-grocy
 rules:
   - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "patch", "update"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
@@ -40,10 +40,10 @@ spec:
   schedule: "0 3 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      backoffLimit: 2
+      backoffLimit: 0
       template:
         spec:
           serviceAccountName: claude-grocy-restarter
@@ -57,4 +57,4 @@ spec:
                 - |
                   set -e
                   kubectl rollout restart deployment/claude-grocy -n claude-grocy
-                  kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=120s
+                  kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=300s
