@@ -29,6 +29,10 @@ Additionally review for:
   commented-out blocks, obvious typos in field names. README out of date
   when the patch makes a material cluster change.
 
+* Blast radius. Changes that alter shared infrastructure, ingress defaults,
+  cluster-wide RBAC, cert-manager issuers, DNS controllers, storage defaults,
+  or Argo CD project policy deserve heightened scrutiny even if the diff is small.
+
 and any other relevant criteria not listed.
 
 The following items are not acceptable in this cluster and should always result in -2:
