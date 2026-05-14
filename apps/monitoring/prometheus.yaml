@@ -45,6 +45,12 @@ spec:
               - name: 'null'
           alertmanagerSpec:
             priorityClassName: cluster-low
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
             affinity:
               nodeAffinity:
                 preferredDuringSchedulingIgnoredDuringExecution:
