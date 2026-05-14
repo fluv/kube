@@ -20,9 +20,9 @@ spec:
           annotations:
             argocd.argoproj.io/sync-options: ServerSideApply=true
           alertmanagerconfigs:
-            enabled: false
+            enabled: true
           alertmanagers:
-            enabled: false
+            enabled: true
           thanosrulers:
             enabled: false
           prometheusrules:
