@@ -14,16 +14,6 @@ spec:
     helm:
       valuesObject:
         priorityClassName: cluster-critical
-        affinity:
-          nodeAffinity:
-            preferredDuringSchedulingIgnoredDuringExecution:
-              - weight: 100
-                preference:
-                  matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: In
-                      values:
-                        - pi.home.arpa
   project: cnpg
   syncPolicy:
     syncOptions:

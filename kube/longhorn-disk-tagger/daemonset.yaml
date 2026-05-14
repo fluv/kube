@@ -49,6 +49,9 @@ spec:
             requests:
               cpu: 1m
               memory: 20Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
           env:
             - name: NODE_NAME
               valueFrom:

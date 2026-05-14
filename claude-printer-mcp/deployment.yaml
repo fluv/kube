@@ -37,16 +37,6 @@ spec:
         fsGroup: 1000
         runAsNonRoot: true
         runAsUser: 1000
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       containers:
         - name: printer-mcp
           image: ghcr.io/fluv/printer-mcp:main

@@ -16,16 +16,6 @@ spec:
       labels:
         app: asda-mcp
     spec:
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       containers:
         - name: asda-mcp
           image: ghcr.io/zuzak/asda-mcp:main

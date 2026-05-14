@@ -13,16 +13,6 @@ spec:
       labels:
         app: grocy
     spec:
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       containers:
         - name: grocy
           image: lscr.io/linuxserver/grocy:v4.6.0-ls322
@@ -59,6 +49,12 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
       volumes:
         - name: grocy-config
           persistentVolumeClaim:

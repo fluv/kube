@@ -154,9 +154,10 @@ As such:
   `cluster-low` (value 100, global default) for everything else. When the VPS
   runs low on memory, low-priority pods are preempted to make room for critical
   ones
-* the [**Descheduler**](https://sigs.k8s.io/descheduler) runs every five minutes
-  and evicts pods that no longer satisfy their preferred node affinity, so they
-  rebalance back to the Pi once it comes back online
+* the [**Descheduler**](https://sigs.k8s.io/descheduler) runs every five minutes;
+  most workloads carry no node affinity, so placement is driven purely by
+  available resources — the Pi's larger allocatable pool (~7 GB vs saraneth's
+  ~1.7 GB) means the scheduler fills it first when it returns after an outage
 
 
 ## Costs

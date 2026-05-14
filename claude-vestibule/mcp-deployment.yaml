@@ -20,16 +20,6 @@ spec:
       labels:
         app: vestibule-mcp
     spec:
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       containers:
         - name: vestibule-mcp
           image: ghcr.io/zuzak/vestibule-mcp:main

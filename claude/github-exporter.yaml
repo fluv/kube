@@ -228,9 +228,9 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 64Mi
+              memory: 32Mi
             limits:
-              memory: 128Mi
+              memory: 64Mi
           readinessProbe:
             httpGet:
               path: /metrics
@@ -245,8 +245,6 @@ spec:
         - name: pip-packages
           emptyDir: {}
       priorityClassName: cluster-low
-      nodeSelector:
-        kubernetes.io/hostname: pi.home.arpa
 ---
 apiVersion: v1
 kind: Service

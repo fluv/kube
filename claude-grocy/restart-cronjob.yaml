@@ -58,3 +58,9 @@ spec:
                   set -e
                   kubectl rollout restart deployment/claude-grocy -n claude-grocy
                   kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=300s
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi

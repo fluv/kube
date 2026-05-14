@@ -28,16 +28,6 @@ spec:
                 deschedule:
                   enabled:
                     - RemovePodsViolatingNodeAffinity
-        affinity:
-          nodeAffinity:
-            preferredDuringSchedulingIgnoredDuringExecution:
-              - weight: 100
-                preference:
-                  matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: In
-                      values:
-                        - pi.home.arpa
   syncPolicy:
     automated:
       prune: true
