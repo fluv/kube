@@ -39,6 +39,7 @@ The following items are not acceptable in this cluster and should always result 
 * Containers running as root
 * Deployments without explicit memory and CPU requests and limits
 * Mechanisms that restrict pods from scheduling onto autoscaled nodes without justification
+* The `longhorn` StorageClass being used for workloads unsuited to a microSD card (use `longhorn-durable` instead)
 
 If you add additional criteria, mention it in the output and state
 whether you believe it would be a useful addition to this prompt.
