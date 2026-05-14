@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: claude-printer-mcp
+  namespace: claude-printer-mcp
+  labels:
+    prometheus: claude
+spec:
+  namespaceSelector:
+    matchNames:
+      - claude-printer-mcp
+  selector:
+    matchLabels:
+      app: printer-mcp
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
