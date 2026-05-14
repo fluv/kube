@@ -39,6 +39,12 @@ the configuration on a node from scratch.
 The repo uses pre-commit hooks (`k8svalidate`, `check-yaml`, whitespace fixes).
 These run automatically on commit. To run manually: `pre-commit run --all-files`.
 
+## CRDs
+
+CRDs are managed by the `prometheus-crds` ArgoCD app (`apps/monitoring/prometheus-crds.yaml`). If a missing CRD is causing a sync failure, enable it there — do not `kubectl apply` directly.
+
+Claude's RBAC has cluster-wide read but namespace-scoped write only. Cluster-scoped write operations (CRDs, ClusterRoles, PersistentVolumes) will always return Forbidden — they must go through GitOps.
+
 ## Applying node-level changes
 
 Changes to node taints or kubelet config on `saraneth` must be applied manually
