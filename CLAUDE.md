@@ -47,6 +47,14 @@ These run automatically on commit. To run manually: `pre-commit run --all-files`
 
 Cluster-wide read, namespace-scoped write. Cluster-scoped writes (CRDs, ClusterRoles, PersistentVolumes) will always return Forbidden — not a permissions gap to work around, by design.
 
+## Alerting
+
+"Is the cluster healthy?" is answered by "are any alerts firing?" — not by checking dashboards.
+
+When fixing a cluster problem — a pod crashlooping, a service degraded, a disk filling, a node under load — include a PrometheusRule in the same PR that would have caught it. The fix and the alert belong together; the alert is what makes the fix durable.
+
+PrometheusRules live in `logging-alerts/` or alongside their workload manifest. Use `severity: warning` for degraded-but-not-broken, `severity: critical` for imminent failure or data loss.
+
 ## Applying node-level changes
 
 Changes to node taints or kubelet config on `saraneth` must be applied manually
