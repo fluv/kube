@@ -33,6 +33,11 @@ Additionally review for:
   cluster-wide RBAC, cert-manager issuers, DNS controllers, storage defaults,
   or Argo CD project policy deserve heightened scrutiny even if the diff is small.
 
+* Alerting. When a PR fixes a cluster problem or adds infrastructure that can
+  fail silently, it should include a PrometheusRule that would catch the failure
+  next time. Flag the absence as an observation. Escalate to a blocker if the
+  PR resolves a known past incident and ships no alert coverage at all.
+
 and any other relevant criteria not listed.
 
 The following items are not acceptable in this cluster and should always result in -2:
