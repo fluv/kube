@@ -155,8 +155,10 @@ As such:
   runs low on memory, low-priority pods are preempted to make room for critical
   ones
 * the [**Descheduler**](https://sigs.k8s.io/descheduler) runs every five minutes
-  and evicts pods that no longer satisfy their preferred node affinity, so they
-  rebalance back to the Pi once it comes back online
+  to evict any pods that have drifted onto an unsuitable node (e.g. violated
+  topology constraints); most workloads carry no node affinity and are placed
+  purely by available resources, so rebalancing after a Pi outage happens
+  naturally as the scheduler fills the Pi first when it returns
 
 
 ## Costs

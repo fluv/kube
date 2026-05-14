@@ -228,21 +228,15 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 64Mi
+              memory: 32Mi
             limits:
-              memory: 128Mi
+              memory: 64Mi
           readinessProbe:
             httpGet:
               path: /metrics
               port: metrics
             initialDelaySeconds: 90
             periodSeconds: 30
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            limits:
-              memory: 64Mi
       volumes:
         - name: scripts
           configMap:
