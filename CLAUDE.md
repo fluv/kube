@@ -25,7 +25,7 @@ ignored. All dashboards go through `fluv/grafana`.
 
 All cluster state goes through Argo CD. If something needs to exist in the cluster, it belongs in this repo. `kubectl apply` is not a workaround; if ArgoCD can't sync a resource, fix the ArgoCD config.
 
-Exception: secrets are not stored in git. Claude manages secrets directly via namespace-scoped write access (see `claude/rbac.yaml`).
+Exception: secrets are not stored in git. Claude has secret write access in its own namespaces only (see `claude/rbac.yaml`).
 
 Push to `main` and Argo CD will sync automatically. To apply immediately, trigger a sync in the Argo CD UI.
 
