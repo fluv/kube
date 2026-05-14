@@ -183,7 +183,7 @@ data:
         now = time.time()
         if _prompt_template and now < _prompt_template_fetched_at + PROMPT_TEMPLATE_TTL:
             return _prompt_template
-        data = _gh("/repos/fluv/deepseek-review-action/contents/prompt-template.md")
+        data = _gh("/repos/fluv/github/deepseek/prompt-template.md")
         _prompt_template = base64.b64decode(data["content"]).decode()
         _prompt_template_fetched_at = now
         return _prompt_template
