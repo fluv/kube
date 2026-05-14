@@ -237,6 +237,12 @@ spec:
               port: metrics
             initialDelaySeconds: 90
             periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
       volumes:
         - name: scripts
           configMap:
@@ -245,8 +251,6 @@ spec:
         - name: pip-packages
           emptyDir: {}
       priorityClassName: cluster-low
-      nodeSelector:
-        kubernetes.io/hostname: pi.home.arpa
 ---
 apiVersion: v1
 kind: Service

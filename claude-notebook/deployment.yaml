@@ -31,16 +31,6 @@ spec:
       # by the notebook process.
       securityContext:
         fsGroup: 65532
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       containers:
         - name: notebook
           image: ghcr.io/fluv/notebook:main

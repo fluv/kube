@@ -16,16 +16,6 @@ spec:
       labels:
         app: webhook-receiver
     spec:
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       containers:
         - name: webhook-receiver
           image: python:3.13-slim

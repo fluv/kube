@@ -17,16 +17,6 @@ spec:
         global:
           priorityClassName: cluster-critical
           domain: argocd.gentoo-mine.ts.net
-          affinity:
-            nodeAffinity:
-              preferredDuringSchedulingIgnoredDuringExecution:
-                - weight: 100
-                  preference:
-                    matchExpressions:
-                      - key: kubernetes.io/hostname
-                        operator: In
-                        values:
-                          - pi.home.arpa
         configs:
           cm:
             admin.enabled: false

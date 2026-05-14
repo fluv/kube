@@ -40,16 +40,6 @@ spec:
               memory: 256Mi
             limits:
               memory: 512Mi
-          affinity:
-            nodeAffinity:
-              preferredDuringSchedulingIgnoredDuringExecution:
-                - weight: 100
-                  preference:
-                    matchExpressions:
-                      - key: kubernetes.io/hostname
-                        operator: In
-                        values:
-                          - pi.home.arpa
           metrics:
             enabled: true
             serviceMonitor:
@@ -71,16 +61,6 @@ spec:
               memory: 256Mi
             limits:
               memory: 768Mi
-          affinity:
-            nodeAffinity:
-              preferredDuringSchedulingIgnoredDuringExecution:
-                - weight: 100
-                  preference:
-                    matchExpressions:
-                      - key: kubernetes.io/hostname
-                        operator: In
-                        values:
-                          - pi.home.arpa
           metrics:
             enabled: true
             serviceMonitor:
