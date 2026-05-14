@@ -19,7 +19,51 @@ spec:
         crds:
           enabled: false
         alertmanager:
-          enabled: false
+          enabled: true
+          ingress:
+            enabled: true
+            ingressClassName: tailscale
+            pathType: ImplementationSpecific
+            paths: [ / ]
+            hosts:
+              - alertmanager.gentoo-mine.ts.net
+            tls:
+              - hosts:
+                  - alertmanager.gentoo-mine.ts.net
+            annotations:
+              tailscale.com/proxy-class: spread-across-nodes
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: ['alertname', 'namespace']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+              receiver: 'null'
+            receivers:
+              - name: 'null'
+          alertmanagerSpec:
+            priorityClassName: cluster-low
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 100
+                    preference:
+                      matchExpressions:
+                        - key: kubernetes.io/hostname
+                          operator: In
+                          values:
+                            - pi.home.arpa
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn-durable
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 1Gi
         grafana:
           enabled: false
         prometheus:
