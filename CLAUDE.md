@@ -23,8 +23,11 @@ ignored. All dashboards go through `fluv/grafana`.
 
 ## Making changes
 
-All application configuration goes through Argo CD. Push to `main` and Argo CD
-will sync automatically. To apply immediately, trigger a sync in the Argo CD UI.
+All cluster state goes through Argo CD. If something needs to exist in the cluster, it belongs in this repo. `kubectl apply` is not a workaround; if ArgoCD can't sync a resource, fix the ArgoCD config.
+
+Exception: secrets are not stored in git. Claude manages secrets directly via namespace-scoped write access (see `claude/rbac.yaml`).
+
+Push to `main` and Argo CD will sync automatically. To apply immediately, trigger a sync in the Argo CD UI.
 
 When adding helm values to an Application manifest, place them under
 `spec.source.helm.values`.
@@ -39,11 +42,9 @@ the configuration on a node from scratch.
 The repo uses pre-commit hooks (`k8svalidate`, `check-yaml`, whitespace fixes).
 These run automatically on commit. To run manually: `pre-commit run --all-files`.
 
-## CRDs
+## Claude's RBAC
 
-CRDs are managed by the `prometheus-crds` ArgoCD app (`apps/monitoring/prometheus-crds.yaml`). If a missing CRD is causing a sync failure, enable it there — do not `kubectl apply` directly.
-
-Claude's RBAC has cluster-wide read but namespace-scoped write only. Cluster-scoped write operations (CRDs, ClusterRoles, PersistentVolumes) will always return Forbidden — they must go through GitOps.
+Cluster-wide read, namespace-scoped write. Cluster-scoped writes (CRDs, ClusterRoles, PersistentVolumes) will always return Forbidden — not a permissions gap to work around, by design.
 
 ## Applying node-level changes
 
