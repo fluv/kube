@@ -55,7 +55,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: printer-mcp
-          image: ghcr.io/fluv/printer-mcp:main@sha256:d573acdf9fbadd69f1d14e5c1f646e7250b7e1494b4f0f0aab32f234415d8fce
+          image: ghcr.io/fluv/printer-mcp:main@sha256:aff454c833a88baf0d064ca93657efbd9a2fb5cecb05880d76e3507ec9dc6c62
           imagePullPolicy: Always
           ports:
             - name: http
