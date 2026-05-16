@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: notebook
+  namespace: claude-notebook
+  labels:
+    prometheus: claude
+spec:
+  groups:
+    - name: notebook-scrape
+      rules:
+        - alert: ClaudeNotebookDown
+          expr: up{job="notebook", namespace="claude-notebook"} == 0
+          for: 5m
+          labels:
+            severity: warning
+            component: notebook
+          annotations:
+            summary: "Claude notebook metrics scrape target down"
+            description: "Prometheus has been unable to scrape /metrics from the notebook MCP server for 5 minutes. Check the pod and the ServiceMonitor."

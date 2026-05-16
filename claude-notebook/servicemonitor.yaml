@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: notebook
+  namespace: claude-notebook
+  labels:
+    prometheus: claude
+spec:
+  namespaceSelector:
+    matchNames:
+      - claude-notebook
+  selector:
+    matchLabels:
+      app: notebook
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
