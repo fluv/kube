@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: notebook
   namespace: claude-notebook
+  labels:
+    app: notebook
 spec:
   selector:
     app: notebook

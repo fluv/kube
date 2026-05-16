@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: printer-mcp
   namespace: claude-printer-mcp
+  labels:
+    app: printer-mcp
 spec:
   selector:
     app: printer-mcp
