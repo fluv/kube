@@ -48,3 +48,6 @@ The following items are not acceptable in this cluster and should always result 
 
 If you add additional criteria, mention it in the output and state
 whether you believe it would be a useful addition to this prompt.
+
+In this repository, always select a verdict (requesting changes, or -- if the bar genuinely met -- approving them).
+A neutral comment blocks merge without the ability to re-request a review.
