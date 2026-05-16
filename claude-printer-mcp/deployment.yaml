@@ -4,14 +4,15 @@ metadata:
   name: printer-mcp
   namespace: claude-printer-mcp
 spec:
-  # Single replica is load-bearing: when the implementation lands, per-job
-  # state lives on the PVC and in-process. Two replicas would split jobs
-  # incoherently across pods. Same constraint as claude-grocy and the other
-  # MCP servers; recorded explicitly here because the printer-mcp design
-  # (discussions/890) specifically depends on per-page reveal state.
+  # Single replica is load-bearing: per-job state lives in-process (JobStore
+  # dict) so watch_page can find a job submitted by an earlier print_latex
+  # call. Two replicas would split jobs incoherently across pods. Same
+  # constraint as claude-grocy and the other MCP servers; recorded
+  # explicitly here because the printer-mcp design (discussions/890)
+  # specifically depends on per-page reveal state surviving across calls.
   #
-  # Recreate strategy because the PVC is RWO Longhorn — two pods can't mount
-  # it simultaneously during a RollingUpdate.
+  # Recreate strategy keeps the single-replica invariant during rolls
+  # (no two pods alive simultaneously, even briefly).
   replicas: 1
   strategy:
     type: Recreate
@@ -39,18 +40,15 @@ spec:
                     operator: In
                     values:
                       - pi.home.arpa
-      # Longhorn provisions PVCs owned by root, but the printer-mcp image
-      # runs as uid 1000 (see fluv/printer-mcp Dockerfile). fsGroup makes
-      # the kubelet chown /data to gid 1000 on pod start so the process
-      # can write per-job state once the implementation lands. Mirrors the
-      # claude-notebook pattern.
+      # No fsGroup — there's no mounted volume for the kubelet to chown.
+      # Per-job state is in-process; tempdirs live in /tmp inside the
+      # container's writable ephemeral layer.
       #
       # runAsNonRoot + runAsUser are belt-and-braces: the upstream Dockerfile
       # already drops to uid 1000 via USER app, but pinning both at the pod
       # level means the kubelet refuses to start the container if a future
       # image regression ever loses the USER directive.
       securityContext:
-        fsGroup: 1000
         runAsNonRoot: true
         runAsUser: 1000
       containers:
@@ -83,10 +81,3 @@ spec:
               # plenty of headroom for multi-page documents without risking
               # OOM during a print job.
               memory: 512Mi
-          volumeMounts:
-            - name: data
-              mountPath: /data
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: printer-mcp-data
