@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: asda-mcp
-          image: ghcr.io/zuzak/asda-mcp:main
+          image: ghcr.io/fluv/asda-mcp:main
           imagePullPolicy: Always
           ports:
             - name: http

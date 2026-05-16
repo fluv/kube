@@ -139,3 +139,28 @@ spec:
           annotations:
             summary: "Node {{ $labels.instance }} load is {{ $value | printf \"%.1f\" }}x CPU count"
             description: "5-minute load average has been above 1.5x CPU count for 10 minutes."
+
+    - name: prometheus-storage
+      rules:
+        - alert: PrometheusPVCNearlyFull
+          expr: |
+            (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"prometheus-.*|alertmanager-.*"}
+              / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"prometheus-.*|alertmanager-.*"}) > 0.80
+          for: 15m
+          labels:
+            severity: warning
+            component: prometheus
+          annotations:
+            summary: "Prometheus PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+            description: "Once the PVC fills Prometheus stops ingesting samples. Tighten retention or retentionSize, or grow the volume."
+        - alert: PrometheusPVCCritical
+          expr: |
+            (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"prometheus-.*|alertmanager-.*"}
+              / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"prometheus-.*|alertmanager-.*"}) > 0.92
+          for: 5m
+          labels:
+            severity: critical
+            component: prometheus
+          annotations:
+            summary: "Prometheus PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full — ingest imminent"
+            description: "Act now: tighten retention, grow the PVC, or scale down ingest before Prometheus halts."
