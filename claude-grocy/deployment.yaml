@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: claude-grocy
-          image: ghcr.io/zuzak/mcp-grocy-api:latest
+          image: ghcr.io/zuzak/mcp-grocy-api:latest@sha256:072fd7edad159a8d088c4b41249cf6f654bef6341bc8de4774a47462a528b8a9
           imagePullPolicy: Always
           command: ["node", "build/index.js"]
           ports:

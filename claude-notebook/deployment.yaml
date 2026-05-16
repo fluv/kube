@@ -33,7 +33,7 @@ spec:
         fsGroup: 65532
       containers:
         - name: notebook
-          image: ghcr.io/fluv/notebook:main
+          image: ghcr.io/fluv/notebook:sha-c8fc929
           imagePullPolicy: Always
           ports:
             - name: http
