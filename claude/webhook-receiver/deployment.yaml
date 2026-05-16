@@ -18,15 +18,7 @@ spec:
     spec:
       containers:
         - name: webhook-receiver
-          image: python:3.13-slim
-          command: ["/bin/sh", "-c"]
-          # Stock Python image — pip-install at startup; promote to a baked
-          # image once GitHub Actions billing resets (tracked in #816).
-          args:
-            - |
-              set -e
-              pip install --quiet --no-cache-dir aiohttp==3.10.10 PyJWT==2.9.0 cryptography>=41.0 prometheus-client>=0.20
-              exec python /app/script.py
+          image: ghcr.io/fluv/deepseek-receiver:main
           ports:
             - name: http
               containerPort: 8080
@@ -58,26 +50,18 @@ spec:
             httpGet:
               path: /healthz
               port: http
-            # pip install now includes PyJWT + cryptography; ~30s on Pi LAN.
-            initialDelaySeconds: 30
+            initialDelaySeconds: 3
             periodSeconds: 5
             failureThreshold: 6
           livenessProbe:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 10
             periodSeconds: 30
-          volumeMounts:
-            - name: script
-              mountPath: /app
           resources:
             requests:
               cpu: 10m
               memory: 128Mi
             limits:
               memory: 512Mi
-      volumes:
-        - name: script
-          configMap:
-            name: webhook-receiver-script

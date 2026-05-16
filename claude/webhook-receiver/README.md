@@ -5,7 +5,8 @@ GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3
 
 Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `fluv-deepseek[bot]`.
 
-v4 (current): migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.
+v5 (current): pulls a baked image from `ghcr.io/fluv/deepseek-receiver:main` (source at `fluv/.github/deepseek/server/`); ConfigMap-mounted script retired.
+v4: migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.
 v3: adds repo contents snapshot via git tree API (fluv/kube#268).
 v2: routes `pull_request` events to DeepSeek PR review pipeline (fluv/claude#816).
 v1: HMAC verification and logging only.
@@ -52,7 +53,7 @@ This fires a `pull_request.review_requested` event to the receiver.
 Updating the script
 -------------------
 
-The Python source is inlined into `configmap.yaml`. After editing, push to main and trigger an Argo sync. The pod does **not** restart automatically on ConfigMap changes — restart it:
+Source lives at `fluv/.github/deepseek/server/`. Pushing to `main` there rebuilds and publishes `ghcr.io/fluv/deepseek-receiver:main` via GHA. ArgoCD doesn't auto-roll on image-tag changes (the manifest is unchanged) — restart the deployment to pick up the new image:
 
     kubectl -n claude rollout restart deployment webhook-receiver
 
@@ -66,8 +67,3 @@ After the App webhook is configured and secrets are in place, push a commit to a
     kubectl -n claude logs deploy/webhook-receiver --tail=20
 
 Look for `ds_review` → `calling deepseek` → `review posted`. Re-deliveries can be triggered from the App's Recent Deliveries panel at `github.com/settings/apps/deepseek-reviewer`.
-
-Why a stock Python image
-------------------------
-
-The deployment uses `python:3.13-slim` and pip-installs `aiohttp PyJWT cryptography` at startup. Promote to a baked image once GitHub Actions billing allows (tracked in #816).
