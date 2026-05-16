@@ -23,6 +23,22 @@ spec:
       labels:
         app: printer-mcp
     spec:
+      # Pin to the Pi: the printer is at 192.168.1.251 on the home LAN, and
+      # while saraneth and any Hetzner autoscaler nodes can technically
+      # reach the LAN via Tailscale, every IPP submission would round-trip
+      # over the WAN — see the 2026-05-14 Longhorn-over-WAN bandwidth
+      # incident. Pi-only is also fail-closed: if the Pi is offline,
+      # printing wouldn't work from anywhere else anyway, so refusing to
+      # schedule is the honest signal.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - pi.home.arpa
       # Longhorn provisions PVCs owned by root, but the printer-mcp image
       # runs as uid 1000 (see fluv/printer-mcp Dockerfile). fsGroup makes
       # the kubelet chown /data to gid 1000 on pod start so the process
