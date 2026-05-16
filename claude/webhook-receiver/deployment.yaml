@@ -16,9 +16,18 @@ spec:
       labels:
         app: webhook-receiver
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: webhook-receiver
           image: ghcr.io/fluv/deepseek-receiver:v1.0.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - name: http
               containerPort: 8080
