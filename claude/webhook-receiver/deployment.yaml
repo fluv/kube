@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: webhook-receiver
-          image: ghcr.io/fluv/deepseek-receiver:main
+          image: ghcr.io/fluv/deepseek-receiver:v1.0.0
           ports:
             - name: http
               containerPort: 8080
