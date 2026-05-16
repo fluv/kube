@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: vestibule-mcp
-          image: ghcr.io/zuzak/vestibule-mcp:main
+          image: ghcr.io/fluv/vestibule-mcp:main
           imagePullPolicy: Always
           env:
             - name: VESTIBULE_URL
