@@ -50,7 +50,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: kubectl
-              image: rancher/kubectl:v1.33.4
+              image: rancher/kubectl:v1.36.0
               command:
                 - /bin/sh
                 - -c
