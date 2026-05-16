@@ -40,9 +40,14 @@ spec:
                 PATCH="${PATCH}\"${KEY}\":{\"tags\":[\"durable\"]}"
                 FIRST=false
               done
-              PATCH="${PATCH}}}}}"
-              kubectl patch nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
-                --type=merge --patch "$PATCH"
+              PATCH="${PATCH}}}}"
+              # check kubectl exit code so silent failures don't masquerade as success
+              if ! kubectl patch nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
+                --type=merge --patch "$PATCH"; then
+                echo "patch failed; sleeping then exiting non-zero so the daemonset restarts us"
+                sleep 30
+                exit 1
+              fi
               echo "tagged all disks on $NODE_NAME as durable"
               exec sleep infinity
           resources:
