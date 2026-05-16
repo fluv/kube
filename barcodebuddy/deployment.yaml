@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: barcodebuddy
-          image: ghcr.io/zuzak/barcodebuddy-docker:latest
+          image: ghcr.io/fluv/barcodebuddy-docker:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
