@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: waitrose-mcp
-          image: ghcr.io/zuzak/waitrose-mcp:main
+          image: ghcr.io/fluv/waitrose-mcp:main
           imagePullPolicy: Always
           ports:
             - name: http
