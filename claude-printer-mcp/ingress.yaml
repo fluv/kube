@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: printer-mcp
+  namespace: claude-printer-mcp
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    # Basic auth gates the surface: the tool drives a physical printer, so the
+    # endpoint must not be open to anyone who finds the hostname.
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+    # Long timeouts because print_latex blocks until page 1 has physically left
+    # the printer (warm-up + first-page eject can be ~10s), and watch_page
+    # blocks waiting for each subsequent page. 3600s is the same generous bound
+    # claude-grocy uses; tightening can wait until the v1 implementation gives
+    # us real numbers.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Streaming responses (MCP streamable-HTTP transport) require buffering off
+    # so per-page reveals reach the client without being held in the nginx
+    # buffer.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: printer.mcp.k3s.fluv.net
+      http:
+        paths:
+          # Two-path layout (mirrors claude-asda-mcp) rather than a single
+          # root prefix: /metrics deliberately not exposed externally because
+          # the ServiceMonitor scrapes it from inside the cluster.
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: printer-mcp
+                port:
+                  name: http
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: printer-mcp
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - printer.mcp.k3s.fluv.net
+      secretName: printer-mcp-k3s-fluv-net-tls
