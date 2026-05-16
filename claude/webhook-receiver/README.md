@@ -5,7 +5,7 @@ GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3
 
 Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `fluv-deepseek[bot]`.
 
-v5 (current): pulls a baked image from `ghcr.io/fluv/deepseek-receiver:v<version>` (source at `fluv/.github/deepseek/server/`); ConfigMap-mounted script retired.
+v5 (current): pulls a baked image from `ghcr.io/fluv/deepseek-receiver:<version>` (source at `fluv/.github/deepseek/server/`); ConfigMap-mounted script retired.
 v4: migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.
 v3: adds repo contents snapshot via git tree API (fluv/kube#268).
 v2: routes `pull_request` events to DeepSeek PR review pipeline (fluv/claude#816).
@@ -53,7 +53,7 @@ This fires a `pull_request.review_requested` event to the receiver.
 Updating the script
 -------------------
 
-Source lives at `fluv/.github/deepseek/server/`. To cut a new image: bump `version` in `pyproject.toml`, merge to main, then push a matching git tag (e.g. `v1.0.1`). The GHA workflow tags the image as `:v1.0.1` and `:1.0`. Bump the tag in `deployment.yaml` to roll the cluster — ArgoCD will sync the new manifest and trigger a rolling restart:
+Source lives at `fluv/.github/deepseek/server/`. To cut a new image: bump `version` in `pyproject.toml`, merge to main, then push a matching git tag (e.g. `v1.0.1`). The GHA workflow tags the image as `:1.0.1` and `:1.0` (docker/metadata-action strips the `v` prefix). Bump the tag in `deployment.yaml` to roll the cluster — ArgoCD will sync the new manifest and trigger a rolling restart:
 
     kubectl -n claude rollout restart deployment webhook-receiver
 
