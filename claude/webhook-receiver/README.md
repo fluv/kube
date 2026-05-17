@@ -5,7 +5,7 @@ GitHub webhook receiver in the `claude` namespace. Public ingress at `webhook.k3
 
 Receives events from the `deepseek-reviewer` GitHub App (installed org-wide on `fluv`) and runs DeepSeek PR reviews, posting results under `fluv-deepseek[bot]`.
 
-v5 (current): pulls a baked image from `ghcr.io/fluv/deepseek-receiver:<version>` (source at `fluv/.github/deepseek/server/`); ConfigMap-mounted script retired.
+v5 (current): pulls a baked image from `ghcr.io/fluv/deepseek-receiver` pinned by digest (source at `fluv/.github/deepseek/server/`); ConfigMap-mounted script retired; Renovate tracks digest updates.
 v4: migrates to dedicated `deepseek-reviewer` GitHub App; replaces `/ds-recheck` comment trigger with `pull_request.review_requested` event; discovers installation ID at runtime.
 v3: adds repo contents snapshot via git tree API (fluv/kube#268).
 v2: routes `pull_request` events to DeepSeek PR review pipeline (fluv/claude#816).
@@ -53,11 +53,11 @@ This fires a `pull_request.review_requested` event to the receiver.
 Updating the script
 -------------------
 
-Source lives at `fluv/.github/deepseek/server/`. To cut a new image: bump `version` in `pyproject.toml`, merge to main, then push a matching git tag (e.g. `v1.0.1`). The GHA workflow tags the image as `:1.0.1` and `:1.0` (docker/metadata-action strips the `v` prefix). Bump the tag in `deployment.yaml` to roll the cluster — ArgoCD will sync the new manifest and trigger a rolling restart:
+Source lives at `fluv/.github/deepseek/server/`. Merge a change to main there and the CI publishes a new `:main` image. Renovate detects the new digest and opens a PR in this repo bumping the `sha256:` pin in `deployment.yaml` — merge that PR and ArgoCD rolls the deployment.
 
-    kubectl -n claude rollout restart deployment webhook-receiver
+To cut a versioned release: push a `vX.Y.Z` git tag in `fluv/.github`. The workflow also tags the image with `:X.Y.Z`.
 
-Or scale 0→1 if RBAC doesn't cover `rollout restart`.
+`rollout restart` triggers a restart without an image change (e.g. to recover a wedged pod); it is not a deploy mechanism.
 
 Smoke test
 ----------
