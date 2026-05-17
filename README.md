@@ -99,6 +99,9 @@ namespace and scrapes personal (non-cluster) metrics. Current scrapers:
   the Pi to reach devices on the home LAN.
 - **Grocy** — home inventory and meal-planning metrics from the `claude-grocy`
   namespace.
+- **LG TV** — power state, input, volume, and picture-settings metrics from
+  the living-room LG WebOS TV via the SSAP WebSocket protocol (bscpylgtv),
+  pinned to the Pi to reach the home LAN.
 
 ## Claude bot infrastructure
 
