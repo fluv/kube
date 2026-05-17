@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: lgtv-exporter
-          image: ghcr.io/fluv/lgtv-exporter@sha256:0a3c0d85f43aebd4fe03c9815033a6dd713438dfd392911ca658025a6e6b8c6c
+          image: ghcr.io/fluv/lgtv-exporter@sha256:220c93f432f7b92c7a846df8f23cd2dc984f4b83999f3c465f20de378bb17a0e
           ports:
             - name: metrics
               containerPort: 9095
