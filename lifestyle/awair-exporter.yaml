@@ -311,6 +311,7 @@ spec:
           for: 15m
           labels:
             severity: warning
+            component: awair
           annotations:
             summary: "Awair exporter cannot reach any devices"
             description: "All Awair devices have been unreachable for 15 minutes. Check that the pod is running on pi.home.arpa and that devices are on the 192.168.1.0/24 subnet."
@@ -319,6 +320,7 @@ spec:
           for: 15m
           labels:
             severity: warning
+            component: awair
           annotations:
             summary: "Awair device {{ $labels.location }} is unreachable"
             description: "Awair device '{{ $labels.location }}' ({{ $labels.device_uuid }}) has not responded for 15 minutes."
