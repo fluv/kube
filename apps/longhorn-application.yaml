@@ -30,6 +30,8 @@ spec:
           metrics:
             serviceMonitor:
               enabled: true
+          defaultSettings:
+            storageOverProvisioningPercentage: 200
           ingress:
             enabled: true
             tls: true
