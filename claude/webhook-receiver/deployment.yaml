@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: webhook-receiver
-          image: python:3.14-slim
+          image: python:3.13-slim
           command: ["/bin/sh", "-c"]
           # Stock Python image — pip-install at startup; promote to a baked
           # image once GitHub Actions billing resets (tracked in #816).
