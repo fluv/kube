@@ -40,6 +40,7 @@ spec:
               cpu: 10m
               memory: 32Mi
             limits:
+              cpu: 100m
               memory: 64Mi
           readinessProbe:
             httpGet:
@@ -47,6 +48,8 @@ spec:
               port: metrics
             initialDelaySeconds: 10
             periodSeconds: 30
+      nodeSelector:
+        kubernetes.io/hostname: pi.home.arpa
       priorityClassName: cluster-low
 ---
 apiVersion: v1
@@ -96,7 +99,7 @@ spec:
     - name: lgtv
       rules:
         - alert: LGTVExporterDown
-          expr: up{job="lgtv-exporter"} == 0
+          expr: up{namespace="lifestyle", service="lgtv-exporter"} == 0
           for: 5m
           labels:
             severity: warning
