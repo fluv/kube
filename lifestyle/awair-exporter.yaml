@@ -257,6 +257,8 @@ spec:
             name: awair-exporter
             defaultMode: 0755
       priorityClassName: cluster-low
+      nodeSelector:
+        kubernetes.io/hostname: pi.home.arpa
 ---
 apiVersion: v1
 kind: Service
@@ -292,3 +294,31 @@ spec:
       path: /metrics
       interval: 30s
       scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: awair-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: awair
+      rules:
+        - alert: AwairNoDevicesFound
+          expr: sum(awair_up) == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Awair exporter cannot reach any devices"
+            description: "All Awair devices have been unreachable for 15 minutes. Check that the pod is running on pi.home.arpa and that devices are on the 192.168.1.0/24 subnet."
+        - alert: AwairDeviceDown
+          expr: awair_up == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Awair device {{ $labels.location }} is unreachable"
+            description: "Awair device '{{ $labels.location }}' ({{ $labels.device_uuid }}) has not responded for 15 minutes."
