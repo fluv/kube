@@ -48,6 +48,12 @@ spec:
               port: metrics
             initialDelaySeconds: 10
             periodSeconds: 30
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
       nodeSelector:
         kubernetes.io/hostname: pi.home.arpa
       priorityClassName: cluster-low
