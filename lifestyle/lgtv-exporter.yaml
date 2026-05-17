@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lgtv-exporter
+  namespace: lifestyle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lgtv-exporter
+  template:
+    metadata:
+      labels:
+        app: lgtv-exporter
+    spec:
+      containers:
+        - name: lgtv-exporter
+          image: ghcr.io/fluv/lgtv-exporter@sha256:64ae919321464b867e989a88fed5b41d7a72fedc5354b2a75a58ddc9a305ee95
+          ports:
+            - name: metrics
+              containerPort: 9095
+          env:
+            - name: LGTV_IP
+              value: "192.168.1.185"
+            - name: LGTV_CLIENT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lgtv-client-key
+                  key: client-key
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      priorityClassName: cluster-low
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lgtv-exporter
+  namespace: lifestyle
+  labels:
+    app: lgtv-exporter
+spec:
+  selector:
+    app: lgtv-exporter
+  ports:
+    - name: metrics
+      port: 9095
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: lgtv-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  namespaceSelector:
+    matchNames:
+      - lifestyle
+  selector:
+    matchLabels:
+      app: lgtv-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: lgtv-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: lgtv
+      rules:
+        - alert: LGTVExporterDown
+          expr: up{job="lgtv-exporter"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: LGTV exporter pod is not scraping
+            description: The lgtv-exporter pod has not responded to scrapes for 5 minutes.
