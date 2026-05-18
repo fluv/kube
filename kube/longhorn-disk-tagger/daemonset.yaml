@@ -31,24 +31,29 @@ spec:
                 echo "waiting for longhorn node $NODE_NAME..."
                 sleep 10
               done
-              DISK_KEYS=$(kubectl get nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
-                -o go-template='{{range $key, $_ := .spec.disks}}{{$key}} {{end}}')
+              DISK_ENTRIES=$(kubectl get nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
+                -o go-template='{{range $key, $disk := .spec.disks}}{{$key}}={{$disk.path}} {{end}}')
               PATCH='{"spec":{"disks":{'
               FIRST=true
-              for KEY in $DISK_KEYS; do
+              for ENTRY in $DISK_ENTRIES; do
+                KEY="${ENTRY%%=*}"
+                DISK_PATH="${ENTRY##*=}"
+                case "$DISK_PATH" in
+                  *archive*) TAG="archive" ;;
+                  *)         TAG="durable" ;;
+                esac
                 [ "$FIRST" = "true" ] || PATCH="${PATCH},"
-                PATCH="${PATCH}\"${KEY}\":{\"tags\":[\"durable\"]}"
+                PATCH="${PATCH}\"${KEY}\":{\"tags\":[\"${TAG}\"]}"
                 FIRST=false
               done
               PATCH="${PATCH}}}}"
-              # check kubectl exit code so silent failures don't masquerade as success
               if ! kubectl patch nodes.longhorn.io/"$NODE_NAME" -n longhorn-system \
                 --type=merge --patch "$PATCH"; then
                 echo "patch failed; sleeping then exiting non-zero so the daemonset restarts us"
                 sleep 30
                 exit 1
               fi
-              echo "tagged all disks on $NODE_NAME as durable"
+              echo "tagged all disks on $NODE_NAME"
               exec sleep infinity
           resources:
             requests:

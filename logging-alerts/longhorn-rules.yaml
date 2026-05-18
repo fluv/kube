@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-health
+  namespace: longhorn-system
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: longhorn-volume-health
+      rules:
+        # longhorn_volume_robustness encodes health as: 0=unknown, 1=healthy, 2=degraded, 3=faulted
+        # These alerts are inert until Longhorn metrics are scraped — see fluv/kube#NNN
+        - alert: LonghornVolumeDegraded
+          expr: longhorn_volume_robustness == 2
+          for: 15m
+          labels:
+            severity: warning
+            component: longhorn
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} has been degraded for 15 minutes"
+            description: "Volume {{ $labels.volume }} has fewer replicas than configured. Check Longhorn UI for replica scheduling failures — likely disk space or tag mismatch."
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness == 3
+          for: 5m
+          labels:
+            severity: critical
+            component: longhorn
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} is faulted"
+            description: "Volume {{ $labels.volume }} has no healthy replicas. Data may be at risk. Check Longhorn UI immediately."

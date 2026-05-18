@@ -1,0 +1,13 @@
+allowVolumeExpansion: true
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-archive
+  annotations:
+    kubernetes.io/description: |
+      Longhorn storage class pinned to saraneth's archive disk
+parameters:
+  diskSelector: archive
+provisioner: driver.longhorn.io
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
