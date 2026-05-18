@@ -9,8 +9,7 @@ spec:
   groups:
     - name: longhorn-volume-health
       rules:
-        # longhorn_volume_robustness encodes health as: 0=unknown, 1=healthy, 2=degraded, 3=faulted
-        # These alerts are inert until Longhorn metrics are scraped — see fluv/kube#NNN
+        # longhorn_volume_robustness: 0=unknown, 1=healthy, 2=degraded, 3=faulted
         - alert: LonghornVolumeDegraded
           expr: longhorn_volume_robustness == 2
           for: 15m
