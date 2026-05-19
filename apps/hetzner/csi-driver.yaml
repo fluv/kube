@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://charts.hetzner.cloud
     targetRevision: v2.20.*
-    chart: hcloud/hcloud-csi
+    chart: hcloud-csi
     helm:
       valuesObject:
         priorityClassName: system-cluster-critical
