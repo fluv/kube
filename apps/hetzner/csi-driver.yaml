@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hcloud-csi-driver
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: hetzner
+  source:
+    repoURL: https://charts.hetzner.cloud
+    targetRevision: v2.20.*
+    chart: hcloud/hcloud-csi
+    helm:
+      valuesObject:
+        priorityClassName: system-cluster-critical
+        resources:
+          csiAttacher:
+            limits:
+              memory: 80Mi
+              cpu: 50m
+            requests:
+              memory: 20Mi
+              cpu: 10m
+          csiResizer:
+            limits:
+              memory: 80Mi
+              cpu: 50m
+            requests:
+              memory: 20Mi
+              cpu: 10m
+          csiProvisioner:
+            limits:
+              memory: 80Mi
+              cpu: 50m
+            requests:
+              memory: 20Mi
+              cpu: 10m
+          livenessProbe:
+            limits:
+              memory: 80Mi
+              cpu: 50m
+            requests:
+              memory: 20Mi
+              cpu: 10m
+          hcloudCSIDriver:
+            limits:
+              memory: 80Mi
+              cpu: 100m
+            requests:
+              memory: 40Mi
+              cpu: 10m
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
