@@ -11,30 +11,30 @@ spec:
       rules:
         - alert: SaranethBandwidthWarning
           expr: |
-            increase(node_network_transmit_bytes_total{instance=~"saraneth.*",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[30d])
-            / 1e12 > 1.6
+            increase(node_network_transmit_bytes_total{instance=~"saraneth.*",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[7d])
+            / 1e12 > 0.37
           for: 1h
           labels:
             severity: warning
           annotations:
             summary: "Saraneth WAN egress approaching monthly cap"
             description: >-
-              Saraneth has transmitted {{ $value | humanize }}TB in the last 30 days.
-              Bitfolk monthly allowance is 2 TB (80% threshold: 1.6 TB).
+              Saraneth has transmitted {{ $value | humanize }}TB in the last 7 days
+              (~1.6 TB/month extrapolated). Bitfolk allowance is 2 TB/month.
               Check Longhorn replica placement — hot volumes should not have replicas on saraneth.
 
         - alert: SaranethBandwidthCritical
           expr: |
-            increase(node_network_transmit_bytes_total{instance=~"saraneth.*",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[30d])
-            / 1e12 > 2.0
+            increase(node_network_transmit_bytes_total{instance=~"saraneth.*",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[7d])
+            / 1e12 > 0.47
           for: 15m
           labels:
             severity: critical
           annotations:
-            summary: "Saraneth WAN egress has exceeded monthly cap"
+            summary: "Saraneth WAN egress on track to exceed monthly cap"
             description: >-
-              Saraneth has transmitted {{ $value | humanize }}TB in the last 30 days,
-              exceeding the 2 TB Bitfolk monthly allowance.
+              Saraneth has transmitted {{ $value | humanize }}TB in the last 7 days
+              (~2 TB/month extrapolated), on track to exceed the Bitfolk 2 TB allowance.
               Immediate action required: check Longhorn replica placement and consider
               stopping k3s on saraneth to halt replication.
 
