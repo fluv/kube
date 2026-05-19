@@ -53,7 +53,8 @@ spec:
         runAsUser: 1000
       containers:
         - name: printer-mcp
-          image: ghcr.io/fluv/printer-mcp:1.1.1@sha256:ef5164e12978053b6bbe3441151027aba4511b137b96a144e4f9a42f280d05e9
+          # Digest to be updated once printer-mcp 1.1.2 is published.
+          image: ghcr.io/fluv/printer-mcp:1.1.2
           imagePullPolicy: Always
           ports:
             - name: http
@@ -71,6 +72,9 @@ spec:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 30
+          env:
+            - name: PRINTER_MCP_DRY_RUN
+              value: "true"
           resources:
             requests:
               cpu: 10m
