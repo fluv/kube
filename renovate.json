@@ -1,11 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
+  "extends": ["config:recommended"],
   "argocd": {
-    "fileMatch": ["^apps/.*\\.ya?ml$"]
+    "managerFilePatterns": [
+      "/^apps/.*\\.ya?ml$/"
+    ]
   },
   "kubernetes": {
-    "fileMatch": ["(^|/).*\\.ya?ml$"]
+    "managerFilePatterns": [
+      "/(^|/).*\\.ya?ml$/"
+    ]
   },
   "packageRules": [
     {
