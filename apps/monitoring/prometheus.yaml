@@ -78,7 +78,7 @@ spec:
           prometheusSpec:
             replicas: 1
             priorityClassName: cluster-low
-            retention: 7d
+            retention: 8d
             retentionSize: 7GB
             resources:
               requests:
