@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: saraneth-bandwidth
+  namespace: monitoring
+spec:
+  groups:
+    - name: saraneth-bandwidth
+      rules:
+        - alert: SaranethBandwidthWarning
+          expr: |
+            increase(node_network_transmit_bytes_total{node="saraneth",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[30d])
+            / 1e12 > 1.6
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Saraneth WAN egress approaching monthly cap"
+            description: >-
+              Saraneth has transmitted {{ $value | humanize }}TB in the last 30 days.
+              Bitfolk monthly allowance is 2 TB (80% threshold: 1.6 TB).
+              Check Longhorn replica placement — hot volumes should not have replicas on saraneth.
+
+        - alert: SaranethBandwidthCritical
+          expr: |
+            increase(node_network_transmit_bytes_total{node="saraneth",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[30d])
+            / 1e12 > 2.0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Saraneth WAN egress has exceeded monthly cap"
+            description: >-
+              Saraneth has transmitted {{ $value | humanize }}TB in the last 30 days,
+              exceeding the 2 TB Bitfolk monthly allowance.
+              Immediate action required: check Longhorn replica placement and consider
+              stopping k3s on saraneth to halt replication.
+
+        - alert: SaranethBandwidthRateHigh
+          expr: |
+            rate(node_network_transmit_bytes_total{node="saraneth",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[1h])
+            * 86400 * 30 / 1e12 > 1.0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Saraneth WAN egress rate would exceed 1 TB/mo"
+            description: >-
+              Saraneth's current egress rate of {{ $value | humanize }}B/s would consume
+              {{ with query "rate(node_network_transmit_bytes_total{node=\"saraneth\",device!~\"lo|tailscale0|veth.*|cali.*|tunl.*\"}[1h]) * 86400 * 30 / 1e12" }}{{ . | first | value | humanize }}{{ end }}TB
+              over 30 days. Investigate Longhorn replication traffic.
