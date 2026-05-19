@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: printer-mcp-docs
+  namespace: claude-printer-mcp
+  annotations:
+    # /docs is intentionally unauthenticated — the UUID token in the path is
+    # the capability. Basic auth is on the sibling ingress covering /mcp and
+    # /healthz; split ingress is the standard nginx-ingress pattern for
+    # per-path auth overrides on the same hostname.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: printer.mcp.k3s.fluv.net
+      http:
+        paths:
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: printer-mcp
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - printer.mcp.k3s.fluv.net
+      secretName: printer-mcp-k3s-fluv-net-tls

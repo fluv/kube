@@ -53,8 +53,8 @@ spec:
         runAsUser: 1000
       containers:
         - name: printer-mcp
-          # Digest to be updated once printer-mcp 1.1.2 is published.
-          image: ghcr.io/fluv/printer-mcp:1.1.2
+          # Digest to be updated once printer-mcp 1.2.0 is published.
+          image: ghcr.io/fluv/printer-mcp:1.2.0
           imagePullPolicy: Always
           ports:
             - name: http
@@ -75,6 +75,8 @@ spec:
           env:
             - name: PRINTER_MCP_DRY_RUN
               value: "true"
+            - name: PRINTER_MCP_BASE_URL
+              value: "https://printer.mcp.k3s.fluv.net"
           resources:
             requests:
               cpu: 10m
