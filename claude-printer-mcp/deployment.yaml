@@ -53,8 +53,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: printer-mcp
-          # Digest to be updated once printer-mcp 1.2.0 is published.
-          image: ghcr.io/fluv/printer-mcp:1.2.0
+          image: ghcr.io/fluv/printer-mcp:1.2.0@sha256:39e30411159bc370e4e5ebc1277b90591d3010b147a1ad25909490fa4c3c958e
           imagePullPolicy: Always
           ports:
             - name: http
