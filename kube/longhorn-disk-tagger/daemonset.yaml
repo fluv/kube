@@ -20,7 +20,11 @@ spec:
               - matchExpressions:
                   - key: kubernetes.io/hostname
                     operator: NotIn
-                    values: [pi.home.arpa]
+                    # pi: uses SD card (tagged 'sd', not 'durable') — excluded upstream
+                    # saraneth: Bitfolk VPS with metered WAN egress; longhorn-durable
+                    # volumes must not replicate there. Disks are tagged 'wan' manually
+                    # and must not be overwritten with 'durable' by this tagger.
+                    values: [pi.home.arpa, saraneth]
       containers:
         - name: tagger
           image: docker.io/bitnami/kubectl@sha256:e2b97dde9666986c61c56d49aae85a714b89b69392baa531438e74ec34096fb4
