@@ -106,6 +106,8 @@ spec:
                             - cloud
             storageSpec:
               volumeClaimTemplate:
+                metadata:
+                  name: prom-hcloud-db
                 spec:
                   storageClassName: hcloud-volumes
                   accessModes:
