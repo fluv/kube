@@ -11,7 +11,7 @@ spec:
   project: hetzner
   source:
     repoURL: https://charts.hetzner.cloud
-    targetRevision: v2.20.*
+    targetRevision: 2.21.*
     chart: hcloud-csi
     helm:
       valuesObject:
