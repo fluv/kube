@@ -52,6 +52,12 @@ spec:
             requests:
               memory: 40Mi
               cpu: 10m
+        controller:
+          nodeSelector:
+            instance.hetzner.cloud/provided-by: cloud
+        node:
+          nodeSelector:
+            instance.hetzner.cloud/provided-by: cloud
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
