@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notebook-docs
+  namespace: claude-notebook
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    # /docs is public — no auth annotation. nginx-ingress applies auth at the
+    # Ingress resource level, so a separate Ingress is required to exempt a
+    # single path from the basic-auth guard on the main notebook Ingress.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: notebook.mcp.k3s.fluv.net
+      http:
+        paths:
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: notebook
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - notebook.mcp.k3s.fluv.net
+      secretName: notebook-k3s-fluv-net-tls
