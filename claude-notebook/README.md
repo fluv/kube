@@ -7,7 +7,7 @@ Namespace hosting a single service:
   jq filtering on read). Source in
   [fluv/notebook](https://github.com/fluv/notebook).
 
-Tools exposed: `list_namespaces`, `append`, `get`, `delete`.
+Tools exposed: `list_namespaces`, `describe_namespace`, `append`, `get`, `delete`, `search`.
 
 ## Storage shape
 

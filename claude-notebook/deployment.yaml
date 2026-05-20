@@ -24,6 +24,8 @@ spec:
     metadata:
       labels:
         app: notebook
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-05-20T02:45:24Z"
     spec:
       # The distroless:nonroot base image runs as uid:gid 65532:65532, but
       # Longhorn provisions PVCs owned by root. Set fsGroup so the kubelet
