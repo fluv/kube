@@ -31,6 +31,8 @@ POOLS = [
 
 LABELS = {
     "kubernetes.io/os": "linux",
+    # Required by hcloud-csi nodeSelector; CCM is not deployed so we set it here.
+    "instance.hetzner.cloud/provided-by": "cloud",
 }
 
 
