@@ -16,6 +16,9 @@ rules:
   - apiGroups: [apps]
     resources: [statefulsets]
     verbs: [delete, get]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    verbs: [get]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -43,12 +46,19 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrator
-          image: bitnami/kubectl:1.33
+          image: bitnami/kubectl:1.33.1
           command:
             - sh
             - -c
             - |
-              echo "Waiting for Prometheus CR to reference hcloud-volumes..."
+              echo "Checking pre-populated PVC exists and is Bound..."
+              pvc_phase=$(kubectl get pvc prom-hcloud-db-prometheus-prometheus-kube-prometheus-0 \
+                -n monitoring -o jsonpath='{.status.phase}' 2>/dev/null)
+              if [ "$pvc_phase" != "Bound" ]; then
+                echo "ERROR: pre-populated PVC is not Bound (phase: ${pvc_phase:-NotFound}). Aborting."
+                exit 1
+              fi
+              echo "PVC is Bound. Waiting for Prometheus CR to reference hcloud-volumes..."
               until kubectl get prometheus prometheus-kube-prometheus -n monitoring \
                 -o jsonpath='{.spec.storage.volumeClaimTemplate.spec.storageClassName}' 2>/dev/null \
                 | grep -q hcloud-volumes; do
