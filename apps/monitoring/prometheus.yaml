@@ -139,4 +139,7 @@ spec:
             kubeSchedulerAlerting: false
             kubeSchedulerRecording: false
             kubeControllerManager: false
-  syncPolicy: {}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
