@@ -57,16 +57,17 @@ runcmd:
   # but DHCP assignment takes a few seconds.
   - until ip addr show ens10 2>/dev/null | grep -q 'inet '; do sleep 2; done
 
-  # Loose rp_filter: traffic from Pi/saraneth arrives on tailscale0 addressed
-  # to our ens10 IP; the reply exits via ens10. Strict mode would drop the
-  # inbound packet since the return path for the source is tailscale0, not ens10.
+  # Loose rp_filter: pod traffic from Pi/saraneth arrives via Tailscale subnet
+  # routes on tailscale0, but the reverse route to those pod source IPs
+  # (10.42.x.x) goes via flannel over ens10. Strict mode sees a mismatch and
+  # drops the inbound packet.
   - sysctl -w net.ipv4.conf.all.rp_filter=2
   - sysctl -w net.ipv4.conf.ens10.rp_filter=2
 
   # Advertise the private network subnet over Tailscale so Pi and saraneth can
   # reach hcloud flannel VTEP endpoints. The tag:k3s autoApprover in the tailnet
   # ACL approves this automatically.
-  - tailscale set --advertise-routes=$(ip -4 route show dev ens10 scope link | awk '{print $1}')
+  - tailscale set --advertise-routes=$(ip -4 route show dev ens10 scope link | awk '{print $1}' | paste -sd,)
 
   # Join the cluster as an agent node.
   # --node-ip: register the Tailscale IP so the control plane can reach this node.
