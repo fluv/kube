@@ -45,6 +45,12 @@ The following items are not acceptable in this cluster and should always result 
 * Deployments without explicit memory and CPU requests and limits
 * Mechanisms that restrict pods from scheduling onto autoscaled nodes without justification
 * The `longhorn` StorageClass being used for workloads unsuited to a microSD card (use `longhorn-durable` instead)
+* The `hcloud` StorageClasses being provisioned for fewer than 10GiB (unsupported)
+
+Additional things to bear in mind:
+* `hcloud` StorageClasses incur real-money cost (approximately £0.04/GB/month) whereas other StorageClasses are monetarily-free (but have different tradeoffs)
+* Traffic from `saraneth` is metered above 2T (out) and 4T (in) per month at £0.06/GB; overage should be avoided
+* The eventual path is to move this cluster into fully Hetzner Cloud. We aren't there yet, but architectural decisions that move away from that framing should be avoided.
 
 If you add additional criteria, mention it in the output and state
 whether you believe it would be a useful addition to this prompt.
