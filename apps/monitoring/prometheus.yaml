@@ -95,10 +95,21 @@ spec:
               initialDelaySeconds: 0
               failureThreshold: 10
               periodSeconds: 30
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                    - matchExpressions:
+                        - key: instance.hetzner.cloud/provided-by
+                          operator: In
+                          values:
+                            - cloud
             storageSpec:
               volumeClaimTemplate:
+                metadata:
+                  name: prom-hcloud-db
                 spec:
-                  storageClassName: longhorn-durable
+                  storageClassName: hcloud-volumes
                   accessModes:
                     - ReadWriteOnce
                   resources:
@@ -128,7 +139,4 @@ spec:
             kubeSchedulerAlerting: false
             kubeSchedulerRecording: false
             kubeControllerManager: false
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  syncPolicy: {}
