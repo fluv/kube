@@ -11,10 +11,11 @@
 # Tailnet: gentoo-mine.ts.net
 #
 # Nodes have a public IPv4 (HCLOUD_PUBLIC_IPV4=true) and are attached to the
-# k3s-private Hetzner private network (interface ens10). Tailscale carries
-# control-plane traffic (kubelet ↔ API server) and enables Pi/saraneth to reach
-# hcloud overlay addresses. Pod-to-pod traffic between hcloud nodes travels
-# directly over the private network, bypassing Tailscale.
+# k3s-private Hetzner private network (interface ens10, 10.10.0.0/16).
+# Tailscale carries control-plane traffic (kubelet ↔ API server) and enables
+# Pi/saraneth to reach hcloud overlay addresses. Pod-to-pod traffic between
+# hcloud nodes travels directly over the private network, bypassing Tailscale.
+# See docs/network-allocations.md for the full address plan.
 #
 # Access:
 #   - claude (user account, no sudo): ssh as claude with the pi-side kube key for
