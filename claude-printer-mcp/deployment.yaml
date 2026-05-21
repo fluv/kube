@@ -73,7 +73,7 @@ spec:
             periodSeconds: 30
           env:
             - name: PRINTER_MCP_DRY_RUN
-              value: "true"
+              value: "false"
             - name: PRINTER_MCP_BASE_URL
               value: "https://printer.mcp.k3s.fluv.net"
           resources:
