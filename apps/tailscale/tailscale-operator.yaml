@@ -11,7 +11,7 @@ spec:
   project: tailscale
   source:
     repoURL: https://pkgs.tailscale.com/helmcharts
-    targetRevision: 1.96.*
+    targetRevision: 1.98.*
     chart: tailscale-operator
     helm:
       values: |
