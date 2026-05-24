@@ -19,7 +19,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: telegram-trading
-          image: ghcr.io/fluv/telegram-trading:v1.0.3
+          image: ghcr.io/fluv/telegram-trading:v1.0.4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -65,13 +65,13 @@ spec:
               mountPath: /data
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 3000
             initialDelaySeconds: 60
             periodSeconds: 30
