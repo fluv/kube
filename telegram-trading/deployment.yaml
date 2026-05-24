@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: telegram-trading
-          image: ghcr.io/fluv/telegram-trading:latest
-          imagePullPolicy: Always
+          image: ghcr.io/fluv/telegram-trading:sha-b9a71fd
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:
@@ -65,11 +65,19 @@ spec:
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
           resources:
             requests:
               cpu: 10m
               memory: 128Mi
             limits:
+              cpu: 200m
               memory: 256Mi
       volumes:
         - name: logs
