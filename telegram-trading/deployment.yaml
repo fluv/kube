@@ -13,6 +13,10 @@ spec:
       labels:
         app: telegram-trading
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: telegram-trading
           image: ghcr.io/fluv/telegram-trading:sha-b9a71fd
