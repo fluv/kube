@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegram-trading
+  namespace: telegram-trading
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegram-trading
+  template:
+    metadata:
+      labels:
+        app: telegram-trading
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: telegram-trading
+          image: ghcr.io/fluv/telegram-trading:sha-b9a71fd
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: LOGGING_ENABLED
+              value: "true"
+            - name: LOGGING_FILE
+              value: /data/trashzone.log
+            - name: TRADING212_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-trading-secrets
+                  key: TRADING212_API_KEY
+            - name: TELEGRAM_API_ID
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-trading-secrets
+                  key: TELEGRAM_API_ID
+            - name: TELEGRAM_API_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-trading-secrets
+                  key: TELEGRAM_API_HASH
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-trading-secrets
+                  key: TELEGRAM_BOT_TOKEN
+            - name: TELEGRAM_STRING_SESSION
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-trading-secrets
+                  key: TELEGRAM_STRING_SESSION
+            - name: TELEGRAM_INVITE_LINK
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-trading-secrets
+                  key: TELEGRAM_INVITE_LINK
+          volumeMounts:
+            - name: logs
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: telegram-trading-logs

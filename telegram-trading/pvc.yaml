@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: telegram-trading-logs
+  namespace: telegram-trading
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-durable
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: telegram-trading
+  namespace: telegram-trading
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: telegram-trading
+      rules:
+        - alert: TelegramTradingDown
+          expr: kube_deployment_status_replicas_available{namespace="telegram-trading", deployment="telegram-trading"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: telegram-trading has no available replicas
+            description: The telegram-trading deployment has had zero available replicas for 5 minutes. The bot is not running.
+
+        - alert: TelegramTradingCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total{namespace="telegram-trading", container="telegram-trading"}[1h]) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: telegram-trading is crash-looping
+            description: The telegram-trading pod has restarted more than 3 times in the last hour.
