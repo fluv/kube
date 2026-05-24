@@ -19,7 +19,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: telegram-trading
-          image: ghcr.io/fluv/telegram-trading:sha-b9a71fd
+          image: ghcr.io/fluv/telegram-trading:sha-e9c2ee3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
