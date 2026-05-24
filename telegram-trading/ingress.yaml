@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: telegram-trading
+  namespace: telegram-trading
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: trading.k3s.fluv.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: telegram-trading
+                port:
+                  number: 3000
+  tls:
+    - hosts:
+        - trading.k3s.fluv.net
+      secretName: trading-k3s-fluv-net-tls
