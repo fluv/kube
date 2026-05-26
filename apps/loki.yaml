@@ -74,7 +74,7 @@ spec:
           persistence:
             enabled: true
             storageClass: hcloud-volumes
-            size: 30Gi
+            size: 10Gi
           resources:
             requests:
               cpu: 100m
