@@ -47,7 +47,10 @@ runcmd:
   - chmod 600 /root/.ssh/authorized_keys
 
   # Join the tailnet. No exit node needed — public IPv4 is available.
-  - tailscale up --authkey=__TAILSCALE_AUTH_KEY__ --advertise-tags=tag:k3s --hostname=hcloud-$(curl -sf http://169.254.169.254/hetzner/v1/metadata/hostname)
+  # --accept-routes: ingest subnet routes from other peers (needed to receive
+  # the per-host /32 VTEP routes that other hcloud nodes advertise, so flannel
+  # VXLAN packets from those nodes pass rp_filter on this node).
+  - tailscale up --authkey=__TAILSCALE_AUTH_KEY__ --advertise-tags=tag:k3s --accept-routes --hostname=hcloud-$(curl -sf http://169.254.169.254/hetzner/v1/metadata/hostname)
 
   # Wait for Tailscale to assign an IP before attempting to reach the k3s API
   - until tailscale ip -4 2>/dev/null; do sleep 2; done
@@ -65,13 +68,16 @@ runcmd:
   - sysctl -w net.ipv4.conf.all.rp_filter=2
   - sysctl -w net.ipv4.conf.enp7s0.rp_filter=2
 
-  # Advertise the Hetzner private network over Tailscale so Pi and saraneth can
-  # reach hcloud flannel VTEP endpoints. The tag:k3s autoApprover in the tailnet
-  # ACL approves this automatically. Hetzner assigns enp7s0 a /32 host address
-  # with a separate DHCP route for the full private network (e.g. 10.30.0.0/16);
-  # derive the subnet from that route — ip route scope link returns only the
-  # gateway host route on Hetzner DHCP, not the network prefix.
-  - tailscale set --advertise-routes=$(ip -4 route show dev enp7s0 | awk '/proto dhcp.*via/{print $1; exit}')
+  # Advertise this node's enp7s0 IP as a /32 host route over Tailscale so Pi and
+  # saraneth can route flannel VXLAN packets directly to the correct node.
+  # A /32 per-host route is used rather than a regional /24 because Hetzner does
+  # not guarantee that IPs are allocated from the per-region subnet defined in
+  # docs/network-allocations.md — e.g. an fsn1 node may receive a 10.30.3.x IP
+  # (the hel1 subnet) if Hetzner's allocator assigns sequentially from a shared
+  # pool. A /32 is always correct regardless of actual allocation; a /24 can be
+  # wrong and cause VXLAN traffic to be relayed via the wrong node.
+  # The tag:k3s autoApprover in the tailnet ACL approves this automatically.
+  - tailscale set --advertise-routes=$(ip -4 addr show enp7s0 | awk '/inet /{split($2,a,"/"); print a[1]"/32"; exit}')
 
   # Join the cluster as an agent node.
   # --node-ip: register the Tailscale IP so the control plane can reach this node.
