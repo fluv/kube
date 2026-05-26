@@ -2,7 +2,7 @@
 
 | Range | Owner | Notes |
 |---|---|---|
-| `10.30.0.0/16` | Hetzner private network (`k3s-private`) | hcloud-to-hcloud pod overlay (flannel VXLAN via ens10) |
+| `10.30.0.0/16` | Hetzner private network (`k3s-private`) | hcloud-to-hcloud pod overlay (flannel VXLAN via enp7s0) |
 | `10.30.1.0/24` | └ nbg1 subnet | |
 | `10.30.2.0/24` | └ fsn1 subnet | |
 | `10.30.3.0/24` | └ hel1 subnet | |

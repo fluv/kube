@@ -11,7 +11,7 @@
 # Tailnet: gentoo-mine.ts.net
 #
 # Nodes have a public IPv4 (HCLOUD_PUBLIC_IPV4=true) and are attached to the
-# k3s-private Hetzner private network (interface ens10, 10.30.0.0/16).
+# k3s-private Hetzner private network (interface enp7s0, 10.30.0.0/16).
 # Tailscale carries control-plane traffic (kubelet ↔ API server) and enables
 # Pi/saraneth to reach hcloud overlay addresses. Pod-to-pod traffic between
 # hcloud nodes travels directly over the private network, bypassing Tailscale.
@@ -39,35 +39,36 @@ runcmd:
   - apt-get update -qq
   - apt-get install -y tailscale
 
-  # Join the tailnet and route through an exit node for IPv4 reachability during install
-  - tailscale up --authkey=__TAILSCALE_AUTH_KEY__ --advertise-tags=tag:k3s --hostname=hcloud-$(curl -sf http://169.254.169.254/hetzner/v1/metadata/hostname) --exit-node=auto:any
-
-  # Wait for Tailscale to assign an IP before attempting to reach the k3s API
-  - until tailscale ip -4 2>/dev/null; do sleep 2; done
-
-  # Authorize zuzak's GitHub-listed keys for root ssh login. Each runcmd entry
-  # is its own /bin/sh -c invocation, so no chained && — separate steps.
+  # Authorize zuzak's GitHub-listed keys for root ssh login before Tailscale
+  # takes over DNS. Nodes have public IPv4 so github.com is directly reachable.
   - mkdir -p /root/.ssh
   - chmod 700 /root/.ssh
   - curl -fsSL https://github.com/zuzak.keys -o /root/.ssh/authorized_keys
   - chmod 600 /root/.ssh/authorized_keys
 
-  # Wait for the Hetzner private network interface (ens10) to receive an IP.
+  # Join the tailnet. No exit node needed — public IPv4 is available.
+  - tailscale up --authkey=__TAILSCALE_AUTH_KEY__ --advertise-tags=tag:k3s --hostname=hcloud-$(curl -sf http://169.254.169.254/hetzner/v1/metadata/hostname)
+
+  # Wait for Tailscale to assign an IP before attempting to reach the k3s API
+  - until tailscale ip -4 2>/dev/null; do sleep 2; done
+
+  # Wait for the Hetzner private network interface (enp7s0) to receive an IP.
   # The interface is present at boot (network attached at VM creation time)
-  # but DHCP assignment takes a few seconds.
-  - until ip addr show ens10 2>/dev/null | grep -q 'inet '; do sleep 2; done
+  # but DHCP assignment takes a few seconds. enp7s0 is the consistent name for
+  # the secondary VirtIO NIC on Hetzner Ubuntu 24.04 images (PCI bus 7, slot 0).
+  - until ip addr show enp7s0 2>/dev/null | grep -q 'inet '; do sleep 2; done
 
   # Loose rp_filter: pod traffic from Pi/saraneth arrives via Tailscale subnet
   # routes on tailscale0, but the reverse route to those pod source IPs
-  # (10.42.x.x) goes via flannel over ens10. Strict mode sees a mismatch and
+  # (10.42.x.x) goes via flannel over enp7s0. Strict mode sees a mismatch and
   # drops the inbound packet.
   - sysctl -w net.ipv4.conf.all.rp_filter=2
-  - sysctl -w net.ipv4.conf.ens10.rp_filter=2
+  - sysctl -w net.ipv4.conf.enp7s0.rp_filter=2
 
   # Advertise the private network subnet over Tailscale so Pi and saraneth can
   # reach hcloud flannel VTEP endpoints. The tag:k3s autoApprover in the tailnet
   # ACL approves this automatically.
-  - tailscale set --advertise-routes=$(ip -4 route show dev ens10 scope link | awk '{print $1}' | paste -sd,)
+  - tailscale set --advertise-routes=$(ip -4 route show dev enp7s0 scope link | awk '{print $1}' | paste -sd,)
 
   # Join the cluster as an agent node.
   # --node-ip: register the Tailscale IP so the control plane can reach this node.
@@ -81,7 +82,4 @@ runcmd:
     sh -s - agent
     --kubelet-arg=provider-id=hcloud://$(curl -sf http://169.254.169.254/hetzner/v1/metadata/instance-id)
     --node-ip=$(tailscale ip -4)
-    --flannel-iface=ens10
-
-  # Exit node no longer needed once k3s is running
-  - tailscale set --exit-node=
+    --flannel-iface=enp7s0
