@@ -62,7 +62,7 @@ spec:
           scale-down-delay-after-add: 50m
           scale-down-unneeded-time: 5m
           skip-nodes-with-system-pods: "false"
-          expander: price
+          expander: priority
         # prioritise (arbitrarily selected) Helsinki first and then use CX23 only if CX33 doesn't exist
         expanderPriorities: |-
           10:
