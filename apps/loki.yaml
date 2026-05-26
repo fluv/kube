@@ -71,8 +71,6 @@ spec:
                       values:
                         - pi.home.arpa
                         - saraneth
-                        - hetz-cx23-nbg1-kibeth
-                        - hetz-cx23-nbg1-308d13d52efdd33f
           persistence:
             enabled: true
             storageClass: longhorn-durable
