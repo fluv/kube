@@ -36,6 +36,7 @@ spec:
             region: hel1
         extraEnv:
           HCLOUD_PUBLIC_IPV4: "true" # k3s install script needs GitHub which is IPv4 only
+          HCLOUD_NETWORK: k3s-private # attach new nodes to the Hetzner private network
         extraEnvSecrets:
           HCLOUD_TOKEN:
             name: hcloud
