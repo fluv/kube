@@ -19,20 +19,20 @@ spec:
           tag: v1.33.4
         cloudProvider: hetzner
         autoscalingGroups:
-          - name: hetz-cx23-nbg1
-            minSize: 1
+          - name: hetz-4gb-nbg1
+            minSize: 0
             maxSize: 1
-            instanceType: cx23
+            instanceType: cx23 # 4.79 EUR/mo
             region: nbg1
-          - name: hetz-cx23-fsn1
+          - name: hetz-4gb-hel1
+            minSize: 0
+            maxSize: 2
+            instanceType: cx23
+            region: hel1
+          - name: hetz-8gb-hel1
             minSize: 0
             maxSize: 1
-            instanceType: cx23
-            region: fsn1
-          - name: hetz-cx23-hel1
-            minSize: 0
-            maxSize: 1
-            instanceType: cx23
+            instanceType: cx33 # 7.79 EUR/mo
             region: hel1
         extraEnv:
           HCLOUD_PUBLIC_IPV4: "true" # k3s install script needs GitHub which is IPv4 only
@@ -52,7 +52,7 @@ spec:
           scale-down-delay-after-add: 50m
           scale-down-unneeded-time: 5m
           skip-nodes-with-system-pods: "false"
-          expander: least-waste
+          expander: least-nodes
         hostNetwork: true
         tolerations:
           - key: node-role.kubernetes.io/control-plane
