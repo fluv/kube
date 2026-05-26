@@ -65,10 +65,13 @@ runcmd:
   - sysctl -w net.ipv4.conf.all.rp_filter=2
   - sysctl -w net.ipv4.conf.enp7s0.rp_filter=2
 
-  # Advertise the private network subnet over Tailscale so Pi and saraneth can
+  # Advertise the Hetzner private network over Tailscale so Pi and saraneth can
   # reach hcloud flannel VTEP endpoints. The tag:k3s autoApprover in the tailnet
-  # ACL approves this automatically.
-  - tailscale set --advertise-routes=$(ip -4 route show dev enp7s0 scope link | awk '{print $1}' | paste -sd,)
+  # ACL approves this automatically. Hetzner assigns enp7s0 a /32 host address
+  # with a separate DHCP route for the full private network (e.g. 10.30.0.0/16);
+  # derive the subnet from that route — ip route scope link returns only the
+  # gateway host route on Hetzner DHCP, not the network prefix.
+  - tailscale set --advertise-routes=$(ip -4 route show dev enp7s0 | awk '/proto dhcp.*via/{print $1; exit}')
 
   # Join the cluster as an agent node.
   # --node-ip: register the Tailscale IP so the control plane can reach this node.
