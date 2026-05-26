@@ -73,7 +73,7 @@ spec:
                         - saraneth
           persistence:
             enabled: true
-            storageClass: longhorn-durable
+            storageClass: hcloud-volumes
             size: 30Gi
           resources:
             requests:
