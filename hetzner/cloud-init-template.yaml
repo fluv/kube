@@ -73,6 +73,11 @@ runcmd:
   # gateway host route on Hetzner DHCP, not the network prefix.
   - tailscale set --advertise-routes=$(ip -4 route show dev enp7s0 | awk '/proto dhcp.*via/{print $1; exit}')
 
+  # Load iscsi_tcp for Longhorn v1 data engine volume attachments.
+  # Persisted via modules-load.d so it survives reboots.
+  - echo iscsi_tcp > /etc/modules-load.d/iscsi_tcp.conf
+  - modprobe iscsi_tcp
+
   # Join the cluster as an agent node.
   # --node-ip: register the Tailscale IP so the control plane can reach this node.
   # --flannel-iface: route pod overlay traffic over the private network for
