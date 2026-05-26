@@ -63,7 +63,7 @@ spec:
           scale-down-unneeded-time: 5m
           skip-nodes-with-system-pods: "false"
           expander: priority
-        # Higher value = higher priority. Prefer 8GB hel1 (30) > any 8GB (20) > 4GB hel1 (10) > nbg1 (default 0).
+        # Prefer 8GB hel1 (CX33); use 4GB (CX23) only if unavailable. Higher value = more preferred.
         expanderPriorities:
           10:
             - hetz-4gb-hel1
