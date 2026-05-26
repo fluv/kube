@@ -63,7 +63,7 @@ spec:
           scale-down-unneeded-time: 5m
           skip-nodes-with-system-pods: "false"
           expander: priority
-        # Prefer 8GB hel1 (CX33); use 4GB (CX23) only if unavailable. Higher value = more preferred.
+        # Prefer (arbitrary selected) Helsinki over other regions; prefer CX33 over CX22 (better value)
         expanderPriorities:
           10:
             - hetz-4gb-hel1
