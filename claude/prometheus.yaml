@@ -61,12 +61,12 @@ spec:
   storage:
     volumeClaimTemplate:
       spec:
-        storageClassName: hcloud-volumes
+        storageClassName: longhorn-durable
         accessModes:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 10Gi
+            storage: 2Gi
   serviceMonitorSelector:
     matchLabels:
       prometheus: claude

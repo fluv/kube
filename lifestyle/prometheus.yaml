@@ -58,7 +58,7 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 10Gi
+            storage: 2Gi
   # Scrape only ServiceMonitors explicitly opted in with prometheus: lifestyle.
   # serviceMonitorNamespaceSelector: {} matches all namespaces so targets in
   # claude-grocy (and future lifestyle namespaces) are discovered automatically.
