@@ -91,4 +91,5 @@ runcmd:
     sh -s - agent
     --kubelet-arg=provider-id=hcloud://$(curl -sf http://169.254.169.254/hetzner/v1/metadata/instance-id)
     --node-ip=$(tailscale ip -4)
+    --node-external-ip=$(curl -sf http://169.254.169.254/hetzner/v1/metadata/public-ipv4)
     --flannel-iface=enp7s0
