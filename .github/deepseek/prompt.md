@@ -16,7 +16,10 @@ Additionally review for:
   obviously wrong. Targeted namespace correct. Helm values on Argo CD
   Application manifests should sit under `spec.source.helm.values` rather
   than `valuesObject` — the latter silently strips null values, which has
-  bitten this repo before.
+  bitten this repo before. PVC storage requests should reflect actual
+  workload need — flag new PVCs at ≥5Gi unless the workload clearly
+  justifies it; prefer starting at 1–2Gi and scaling when needed
+  (Longhorn supports online expansion).
 
 * Operational risk. Argo CD sync policy changes (auto-prune, self-heal,
   syncOptions) are unforgiving — flag any modification. Storage class
