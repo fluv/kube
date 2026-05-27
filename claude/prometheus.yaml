@@ -61,7 +61,7 @@ spec:
   storage:
     volumeClaimTemplate:
       spec:
-        storageClassName: longhorn-durable
+        storageClassName: hcloud-volumes
         accessModes:
           - ReadWriteOnce
         resources:
