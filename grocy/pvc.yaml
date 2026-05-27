@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: grocy-config
   namespace: grocy
+  annotations:
+    recurring-job.longhorn.io/b2-daily-backup: enabled
 spec:
   accessModes:
     - ReadWriteOnce
