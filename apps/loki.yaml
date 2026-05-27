@@ -61,10 +61,20 @@ spec:
         singleBinary:
           replicas: 1
           priorityClassName: cluster-low
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: NotIn
+                      values:
+                        - pi.home.arpa
+                        - saraneth
           persistence:
             enabled: true
-            storageClass: longhorn-durable
-            size: 30Gi
+            storageClass: hcloud-volumes
+            size: 10Gi
           resources:
             requests:
               cpu: 100m

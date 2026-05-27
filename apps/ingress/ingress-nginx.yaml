@@ -24,6 +24,10 @@ spec:
               enabled: true
           service:
             externalTrafficPolicy: Cluster
+            externalIPs:
+              - 178.105.218.65
+              - 89.167.51.140
+              - 178.104.110.89
           config:
             log-format-upstream: '{"time":"$time_iso8601","remote_addr":"$remote_addr","x_forwarded_for":"$proxy_add_x_forwarded_for","request_id":"$req_id","status":$status,"method":"$request_method","path":"$uri","query":"$args","host":"$host","proto":"$server_protocol","bytes_sent":$bytes_sent,"request_time":$request_time,"upstream_response_time":"$upstream_response_time","http_referrer":"$http_referer","http_user_agent":"$http_user_agent"}'
   destination:
