@@ -27,6 +27,8 @@ POOLS = [
     {"name": "hetz-4gb-nbg1"},
     {"name": "hetz-4gb-hel1"},
     {"name": "hetz-8gb-hel1"},
+    {"name": "hetz-16gb-hel1"},
+    {"name": "hetz-32gb-hel1"},
 ]
 
 LABELS = {
