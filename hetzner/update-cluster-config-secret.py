@@ -22,6 +22,12 @@ TEMPLATE = Path(__file__).parent / "cloud-init-template.yaml"
 SECRET_NAME = "hcloud-init-data"
 SECRET_NS = "kube-system"
 IMAGE = "ubuntu-24.04"
+# Hetzner network ID for k3s-private (10.30.0.0/16). Including this in
+# nodeConfigs ensures the network is attached at server-creation time, not as
+# a post-creation step. Post-creation attachment causes the Hetzner SDN to
+# skip initialising inbound routing for the node's private IP, breaking
+# flannel VxLAN from other nodes (confirmed on hetz-8gb, 2026-05-30).
+NETWORK_ID = 12239723
 
 POOLS = [
     {"name": "hetz-4gb-nbg1"},
@@ -75,6 +81,7 @@ def main():
             pool["name"]: {
                 "cloudInit": cloud_init,
                 "labels": LABELS,
+                "networks": [NETWORK_ID],
             }
             for pool in POOLS
         },
