@@ -19,7 +19,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: botsnack
-          image: ghcr.io/fluv/botsnack:v0.1.0
+          image: ghcr.io/fluv/botsnack:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
