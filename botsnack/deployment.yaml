@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: botsnack
-  namespace: botsnack
+  namespace: telegram-trading
 spec:
   replicas: 1
   selector:

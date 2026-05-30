@@ -6,7 +6,7 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: botsnack
+    namespace: telegram-trading
   project: default
   source:
     path: botsnack
@@ -18,5 +18,4 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+    syncOptions: []
