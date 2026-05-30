@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: botsnack
+  namespace: telegram-trading
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: botsnack
+      rules:
+        - alert: BotsnackDown
+          expr: kube_deployment_status_replicas_available{namespace="telegram-trading", deployment="botsnack"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: botsnack has no available replicas
+            description: The botsnack deployment has had zero available replicas for 5 minutes.
+
+        - alert: BotsnackCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total{namespace="telegram-trading", container="botsnack"}[1h]) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: botsnack is crash-looping
+            description: The botsnack pod has restarted more than 3 times in the last hour.
