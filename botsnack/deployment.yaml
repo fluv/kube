@@ -21,6 +21,9 @@ spec:
         - name: botsnack
           image: ghcr.io/fluv/botsnack:0.1.0
           imagePullPolicy: IfNotPresent
+          env:
+            - name: UV_CACHE_DIR
+              value: /tmp/.uv-cache
           ports:
             - containerPort: 8000
           readinessProbe:
