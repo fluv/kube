@@ -9,8 +9,11 @@ To bootstrap anew:
 
 ## Cluster overview
 
-I have two Kubernetes nodes at the moment.
-One of them is on my [**Bitfolk**](https://bitfolk.com) VPS, which is your standard
+I have two permanent Kubernetes nodes, plus a variable number of ephemeral
+&ldquo;burst&rdquo; nodes in Hetzner Cloud that an autoscaler provisions on demand
+(see [Burst capacity](#burst-capacity-hetzner-cloud) below).
+
+One permanent node is on my [**Bitfolk**](https://bitfolk.com) VPS, which is your standard
 Debian server running in a datacentre somewhere. Its hostname is `saraneth`.
 
 The other is a [**Raspberry Pi 5** 8GB](https://www.raspberrypi.com/products/raspberry-pi-5/)
@@ -18,6 +21,9 @@ running on my desk. Its hostname is `pi`.
 
 They&rsquo;re connected together via a [**Tailscale**](https://tailscale.com) mesh
 virtual private network using the k3s [experimental integration](https://docs.k3s.io/networking/distributed-multicloud#integration-with-the-tailscale-vpn-provider-experimental).
+The Hetzner burst nodes join the same tailnet but use a two-plane networking
+model to avoid paying Tailscale&rsquo;s encryption overhead on traffic between
+themselves &mdash; described under [Burst capacity](#burst-capacity-hetzner-cloud).
 
 As my VPS already had a PostgreSQL server running, we&rsquo;re using that for
 the cluster datastore. The `saraneth` node has a
@@ -72,6 +78,67 @@ which means that any persistent storage used by our containers will, by default,
 be replicated in both nodes. As I want to run some applications that have heavy
 read/write activity, I have configured a StorageClass that removes SD cards from
 the pool where needed.
+
+### Burst capacity (Hetzner Cloud)
+
+When the permanent nodes run short of room, the
+[**cluster-autoscaler**](https://github.com/kubernetes/autoscaler) (hcloud
+provider) provisions ephemeral nodes in [**Hetzner Cloud**](https://www.hetzner.com/cloud)
+and tears them down again when the load subsides. The
+[**hcloud cloud-controller-manager**](https://github.com/hetznercloud/hcloud-cloud-controller-manager)
+gives these nodes their `hcloud://` provider IDs, and the
+[**hcloud CSI driver**](https://github.com/hetznercloud/csi-driver) backs the
+`hcloud` StorageClasses (real-money cost &mdash; see
+[`docs/network-allocations.md`](docs/network-allocations.md) and the prompt
+guidance for the cost tradeoffs). All of this lives in
+[`apps/hetzner/`](apps/hetzner/); the nodes themselves are built from
+[`hetzner/cloud-init-template.yaml`](hetzner/cloud-init-template.yaml), which is
+heavily commented and is the source of truth for how a node joins.
+
+These nodes use a **two-plane networking model** so that traffic between burst
+nodes does not pay Tailscale&rsquo;s WireGuard overhead:
+
+* **Control plane** &mdash; kubelet&nbsp;&harr;&nbsp;API-server traffic rides
+  Tailscale. Each node joins with `--node-ip` set to its tailnet address, so the
+  Tailscale IP is what appears as `INTERNAL-IP` in `kubectl get nodes` and is how
+  the control plane on `saraneth` reaches the node.
+* **Data plane** &mdash; pod-to-pod overlay rides the **Hetzner private network**
+  (`10.30.0.0/16`, interface `enp7s0`). The node joins with
+  `--flannel-iface=enp7s0`, so flannel uses the node&rsquo;s `10.30.x` address as
+  its VXLAN endpoint and burst-node&nbsp;&harr;&nbsp;burst-node pod traffic goes
+  direct over the private network, bypassing Tailscale. Each burst node advertises
+  its own `enp7s0` address as a `/32` route into the tailnet so the Pi and
+  `saraneth` can reach it. Crucially the burst nodes themselves run **without**
+  `--accept-routes`: ingesting those `/32`s would land them in a higher-priority
+  policy route table, override the direct `enp7s0` route, and force inter-node
+  VXLAN back onto the lower-MTU `tailscale0` interface where it breaks &mdash;
+  which is exactly what happened before it was fixed (see the comments in
+  [`hetzner/cloud-init-template.yaml`](hetzner/cloud-init-template.yaml) and the
+  `--accept-routes` history). Loose `rp_filter` lets the asymmetric
+  Pi/saraneth&nbsp;&harr;&nbsp;burst-node return path through. The full address
+  plan is in [`docs/network-allocations.md`](docs/network-allocations.md).
+
+**Known quirk &mdash; burst nodes show no `EXTERNAL-IP`.** The cloud-init passes
+`--node-external-ip` with the node&rsquo;s real public IPv4, but because the node
+registers with `--node-ip` set to its Tailscale address (which is not one of the
+addresses the CCM derives from the Hetzner API), the CCM&rsquo;s
+cloud-node-controller refuses to apply the node&rsquo;s addresses at all and logs
+`failed to get node address from cloud provider that matches ip: <tailscale-ip>`
+on every reconcile. The net effect is an empty `EXTERNAL-IP` column for burst
+nodes; `saraneth` keeps its external IP only because it is not CCM-managed
+(`k3s://` provider ID). This is expected and currently harmless &mdash; nothing
+consumes the node `ExternalIP` &mdash; but see the ingress note below.
+
+**Planned direction &mdash; ingress on burst nodes.** Today ingress-nginx is
+pinned to `saraneth` via a nodeSelector. The intended
+evolution is to run ingress-nginx on the burst nodes as well and serve external
+traffic via **round-robin DNS**: multiple A records for `k3s.fluv.net`, one per
+live node public IP, kept in sync with reality by a controller talking to the DNS
+provider&rsquo;s API as nodes come and go. Because the node `ExternalIP` is empty
+(above), that sync must read public IPs from the Hetzner API / instance metadata
+rather than from the node object. This is not built yet; Hetzner load balancers
+were considered and rejected as needless monthly cost given round-robin DNS does
+the job.
 
 ### Observability
 
