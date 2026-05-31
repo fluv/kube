@@ -70,9 +70,9 @@ spec:
             - hetz-32gb-hel1
           20: # fallback
             - hetz-4gb-nbg1
-          20: # secondary
+          30: # secondary
             - hetz-4gb-hel1
-          30: # primary
+          40: # primary
             - hetz-8gb-hel1
         hostNetwork: true
         tolerations:
