@@ -12,17 +12,28 @@ spec:
     spec:
       serviceAccountName: hcloud-init-updater
       restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       initContainers:
         - name: git-clone
           # Shallow-clone the repo so the script and template are at their
           # canonical paths. fluv/kube is public so no auth is needed.
-          image: alpine/git:latest
+          image: alpine/git:2.47.2
           command:
             - git
             - clone
             - --depth=1
             - https://github.com/fluv/kube
             - /repo
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
           volumeMounts:
             - name: repo
               mountPath: /repo
@@ -31,6 +42,13 @@ spec:
           # Pinned digest matches kube/longhorn-disk-tagger/daemonset.yaml.
           image: docker.io/bitnami/kubectl@sha256:9c362260ef11ec664c36f34e0cb263b5cacd5b2f64e4c9b93aa3c3dc95549315
           command: [sh, -c, "cp $(which kubectl) /shared/kubectl"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
           volumeMounts:
             - name: shared-bin
               mountPath: /shared

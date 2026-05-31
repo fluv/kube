@@ -14,11 +14,3 @@ repos:
   hooks:
     - id: k8svalidate
       files: .ya?ml$
-- repo: local
-  hooks:
-    - id: generate-hetzner-init-configmap
-      name: Generate hetzner-init-hook ConfigMap
-      language: python
-      entry: hetzner/generate-configmap.py
-      files: ^hetzner/(update-cluster-config-secret\.py|cloud-init-template\.yaml)$
-      pass_filenames: false
