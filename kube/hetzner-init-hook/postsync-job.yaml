@@ -20,7 +20,7 @@ spec:
         - name: git-clone
           # Shallow-clone the repo so the script and template are at their
           # canonical paths. fluv/kube is public so no auth is needed.
-          image: alpine/git:2.47.2
+          image: alpine/git:v2.52.0
           command:
             - git
             - clone
