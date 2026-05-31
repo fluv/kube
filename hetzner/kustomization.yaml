@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+
+resources:
+  - rbac.yaml
+  - postsync-job.yaml
+
+# The script and cloud-init template are mounted into the PostSync hook as a
+# ConfigMap rather than cloned at runtime. configMapGenerator appends a hash of
+# the file contents to the ConfigMap name, so editing cloud-init-template.yaml
+# (or the script) produces a new ConfigMap resource. ArgoCD sees that as a diff,
+# syncs this app, and the sync fires the PostSync hook — which is what makes a
+# template edit propagate to hcloud-init-data automatically. The hook's volume
+# reference is rewritten to the hashed name by kustomize.
+configMapGenerator:
+  - name: hcloud-init
+    files:
+      - update-cluster-config-secret.py
+      - cloud-init-template.yaml
