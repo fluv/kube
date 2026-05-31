@@ -78,8 +78,8 @@ spec:
               path: /healthz
               port: 3000
             initialDelaySeconds: 60
-            periodSeconds: 30
-            failureThreshold: 3
+            periodSeconds: 60
+            failureThreshold: 5
           resources:
             requests:
               cpu: 10m
