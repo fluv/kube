@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hcloud-init-updater
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hcloud-init-updater
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [hcloud-init-data]
+    verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hcloud-init-updater
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: hcloud-init-updater
+    namespace: kube-system
+roleRef:
+  kind: Role
+  name: hcloud-init-updater
+  apiGroup: rbac.authorization.k8s.io
