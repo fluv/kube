@@ -21,6 +21,9 @@ spec:
         - name: botsnack
           image: ghcr.io/fluv/botsnack:0.3.0
           imagePullPolicy: IfNotPresent
+          env:
+            - name: TORCHINDUCTOR_CACHE_DIR
+              value: /tmp/torchinductor
           ports:
             - containerPort: 8000
           readinessProbe:
