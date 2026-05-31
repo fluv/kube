@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hcloud-init-data-update
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      serviceAccountName: hcloud-init-updater
+      restartPolicy: OnFailure
+      initContainers:
+        - name: kubectl-copy
+          # Copy kubectl binary to the shared volume so the python container can use it.
+          # Pinned digest matches kube/longhorn-disk-tagger/daemonset.yaml.
+          image: docker.io/bitnami/kubectl@sha256:9c362260ef11ec664c36f34e0cb263b5cacd5b2f64e4c9b93aa3c3dc95549315
+          command: [sh, -c, "cp $(which kubectl) /shared/kubectl"]
+          volumeMounts:
+            - name: shared-bin
+              mountPath: /shared
+      containers:
+        - name: update-secret
+          image: python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97
+          command: [python3, /hetzner/update-cluster-config-secret.py]
+          env:
+            - name: PATH
+              value: /shared:/usr/local/bin:/usr/bin:/bin
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: shared-bin
+              mountPath: /shared
+            - name: scripts
+              mountPath: /hetzner
+      volumes:
+        - name: shared-bin
+          emptyDir: {}
+        - name: scripts
+          configMap:
+            name: hcloud-init-updater
+            defaultMode: 0755
