@@ -47,10 +47,16 @@ runcmd:
   - chmod 600 /root/.ssh/authorized_keys
 
   # Join the tailnet. No exit node needed — public IPv4 is available.
-  # --accept-routes: ingest subnet routes from other peers (needed to receive
-  # the per-host /32 VTEP routes that other hcloud nodes advertise, so flannel
-  # VXLAN packets from those nodes pass rp_filter on this node).
-  - tailscale up --authkey=__TAILSCALE_AUTH_KEY__ --advertise-tags=tag:k3s --accept-routes --hostname=hcloud-$(curl -sf http://169.254.169.254/hetzner/v1/metadata/hostname)
+  # Deliberately NOT --accept-routes. With it, this node ingests the per-host
+  # /32 VTEP routes that other hcloud nodes advertise into policy table 52.
+  # Rule priority 5270 (lookup 52) outranks main (32766), so those /32s win
+  # over the direct "10.30.0.0/16 via enp7s0" route and inter-hcloud flannel
+  # VXLAN gets forced onto the 1280-MTU tailscale0 interface, where it breaks.
+  # The direct private-network route already satisfies rp_filter (loose mode),
+  # so accepting the /32s buys nothing. Pi/saraneth still reach this node via
+  # the /32 we advertise below; we reach them over the base tailnet route,
+  # which Tailscale installs regardless of --accept-routes. See fluv/kube#479.
+  - tailscale up --authkey=__TAILSCALE_AUTH_KEY__ --advertise-tags=tag:k3s --hostname=hcloud-$(curl -sf http://169.254.169.254/hetzner/v1/metadata/hostname)
 
   # Wait for Tailscale to assign an IP before attempting to reach the k3s API
   - until tailscale ip -4 2>/dev/null; do sleep 2; done
