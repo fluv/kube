@@ -29,8 +29,26 @@ Additionally review for:
   scheduling pattern depends on.
 
 * Mechanical noise. Trailing whitespace, mixed indentation, leftover
-  commented-out blocks, obvious typos in field names. README out of date
-  when the patch makes a material cluster change.
+  commented-out blocks, obvious typos in field names.
+
+* Documentation drift. The `README.md` and the files under `docs/` are the
+  durable record of how this cluster is built; their stated audience is a
+  passer-by who needs to understand the cluster and a sysadmin who needs enough
+  to recreate it from scratch. Treat documentation drift as a first-class
+  finding, not mechanical noise. When a patch changes something the docs
+  describe — or *should* describe — and does not update them, flag it, and say
+  exactly which file and section is now stale. In particular:
+    - Cluster topology or capacity: adding/removing a node class, changing the
+      autoscaler, changing what runs where (node affinity, taints, pinning).
+    - Networking: node-join flags (`--node-ip`, `--flannel-iface`,
+      `--node-external-ip`, `--accept-routes`), CNI/overlay changes, address
+      allocations (cross-check `docs/network-allocations.md`), ingress/DNS path.
+    - New or removed components, StorageClasses, or external dependencies a
+      reader would expect to find named in the README.
+  Escalate to a blocker when the change alters cluster architecture or the
+  bootstrap/recreate path and ships no doc update — a future operator recreating
+  the cluster from these docs would get it wrong. A code change that silently
+  invalidates an existing doc statement is worse than no doc at all.
 
 * Blast radius. Changes that alter shared infrastructure, ingress defaults,
   cluster-wide RBAC, cert-manager issuers, DNS controllers, storage defaults,
