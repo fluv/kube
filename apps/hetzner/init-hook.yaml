@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hcloud-init-hook
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    kubernetes.io/description: |
+      PostSync hook that re-renders the hcloud-init-data secret (the autoscaler
+      cluster-config) from hetzner/cloud-init-template.yaml. The template and
+      script are mounted via a hash-suffixed ConfigMap, so editing either makes
+      this app OutOfSync and the sync fires the hook. See hetzner/kustomization.yaml.
+spec:
+  project: hetzner
+  source:
+    repoURL: https://github.com/fluv/kube.git # this repo!
+    path: hetzner
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
