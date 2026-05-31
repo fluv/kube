@@ -18,7 +18,7 @@ spec:
         image:
           tag: v1.33.4
         cloudProvider: hetzner
-        autoscalingGroups:
+        autoscalingGroups: # hard quota enforced on hetzner side of 5 servers
           - name: hetz-4gb-nbg1 # included in case hel1 is oversubscribed
             minSize: 0
             maxSize: 2
@@ -26,7 +26,7 @@ spec:
             region: nbg1
           - name: hetz-4gb-hel1
             minSize: 0
-            maxSize: 2
+            maxSize: 3
             instanceType: cx23
             region: hel1
           - name: hetz-8gb-hel1
@@ -36,7 +36,7 @@ spec:
             region: hel1
           - name: hetz-16gb-hel1
             minSize: 0
-            maxSize: 0
+            maxSize: 1
             instanceType: cx43 # 14.39 EUR/mo
             region: hel1
           - name: hetz-32gb-hel1
@@ -64,12 +64,15 @@ spec:
           skip-nodes-with-system-pods: "false"
           expander: priority
         # Prefer (arbitrarily selected) Helsinki over other regions; prefer CX33 over CX23 (better value)
-        expanderPriorities:
-          10:
+        expanderPriorities: # higher fulfilled first
+          10: # use only if large pods need it
+            - hetz-16gb-hel1
+            - hetz-32gb-hel1
+          20: # fallback
+            - hetz-4gb-nbg1
+          30: # secondary
             - hetz-4gb-hel1
-          20:
-            - hetz-8gb-.*
-          30:
+          40: # primary
             - hetz-8gb-hel1
         hostNetwork: true
         tolerations:
