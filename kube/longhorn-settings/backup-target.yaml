@@ -1,6 +1,14 @@
+# Longhorn v1.7+ moved backup-target and backup-target-credential-secret out of
+# the Setting kind into this dedicated BackupTarget CRD. The cluster runs v1.10,
+# whose mutating webhook rejects the old Settings ("setting does not exist"),
+# failing the kube app sync. The "default" BackupTarget is auto-created empty by
+# Longhorn; this declaratively populates it. See fluv/kube#481.
 apiVersion: longhorn.io/v1beta2
-kind: Setting
+kind: BackupTarget
 metadata:
-  name: backup-target
+  name: default
   namespace: longhorn-system
-value: "s3://longhorn.k3s.fluv.net@eu-central-003/"
+spec:
+  backupTargetURL: "s3://longhorn.k3s.fluv.net@eu-central-003/"
+  credentialSecret: "longhorn-b2-secret"
+  pollInterval: "5m0s"
