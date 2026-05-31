@@ -83,13 +83,13 @@ the pool where needed.
 For keeping an eye on things I use [**Prometheus**](https://prometheus.io/) to
 collect metrics and [**Grafana Loki**](https://grafana.com/oss/loki/) for logs,
 with [**Grafana Alloy**](https://grafana.com/docs/alloy/) running on every node
-to gather the logs up and ship them to Loki on the Pi. I look at all of it
+to collect the logs and send them to Loki on the Pi. I look at all of it
 through [**Grafana**](https://grafana.com/), which sits on the tailnet at
 `grafana.gentoo-mine.ts.net` rather than being exposed to the world &mdash;
 there&rsquo;s no login, because Tailscale decides who can reach it. A handful of
-alerts watch the logging pipeline itself for the sort of thing that would
-otherwise rot quietly: Loki running low on disk, ingestion stalling, or a node
-that has stopped sending its logs.
+alerts watch the logging itself for the sort of thing that would otherwise go
+unnoticed: Loki running low on disk, logs not getting through, or a node that
+has stopped sending them.
 
 I also run a second, separate Prometheus in the `lifestyle` namespace for
 personal things that aren&rsquo;t really about the cluster at all &mdash; air
