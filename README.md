@@ -9,7 +9,7 @@ To bootstrap anew:
 
 ## Cluster overview
 
-I have two Kubernetes nodes at the moment.
+I have two permanent Kubernetes nodes.
 One of them is on my [**Bitfolk**](https://bitfolk.com) VPS, which is your standard
 Debian server running in a datacentre somewhere. Its hostname is `saraneth`.
 
@@ -18,6 +18,12 @@ running on my desk. Its hostname is `pi`.
 
 They&rsquo;re connected together via a [**Tailscale**](https://tailscale.com) mesh
 virtual private network using the k3s [experimental integration](https://docs.k3s.io/networking/distributed-multicloud#integration-with-the-tailscale-vpn-provider-experimental).
+
+When the two permanent nodes don&rsquo;t have enough room, an autoscaler adds
+extra nodes in [**Hetzner Cloud**](https://www.hetzner.com/cloud) and removes
+them again once they&rsquo;re no longer needed. The Hetzner nodes are on their
+own normal private network for speed, but we use Tailscale when they need to
+talk to the other nodes.
 
 As my VPS already had a PostgreSQL server running, we&rsquo;re using that for
 the cluster datastore. The `saraneth` node has a
@@ -49,10 +55,9 @@ I could feasibly run it on any hardware I might want to extend this cluster to
 in the future. It also came bundled with some integrations out the box that made
 my life easier.
 
-k3s is installed with `--disable=coredns` and `--disable=traefik`. CoreDNS is
-fully managed in this repo under `kube/coredns/` (ConfigMap, ServiceAccount,
-RBAC, DaemonSet, and Service) and deployed by Argo CD — not by the k3s addon
-system. Traefik is replaced by Ingress-Nginx (see below).
+I&rsquo;ve also told k3s not to install its own copy of CoreDNS
+(`--disable=coredns`) and run my own through Argo CD instead, so I can configure
+it however I need to.
 
 We&rsquo;re running [**Argo CD**](https://argo-cd.readthedocs.io/en/stable/),
 which is used to facilitate &ldquo;declarative GitOps&rdquo;: when you push
@@ -75,45 +80,32 @@ the pool where needed.
 
 ### Observability
 
-Cluster metrics come from [**Prometheus**](https://prometheus.io/) via the
-[`kube-prometheus-stack`](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
-chart. Logs are collected cluster-wide by [**Grafana Alloy**](https://grafana.com/docs/alloy/)
-running as a DaemonSet, which tails `/var/log/pods` on each node and ships the
-streams to a single-binary [**Grafana Loki**](https://grafana.com/oss/loki/)
-instance pinned to the Pi. Both are surfaced through a
-[**Grafana**](https://grafana.com/) instance exposed on the tailnet at
-`grafana.gentoo-mine.ts.net` with anonymous admin access — no login, no public
-ingress; Tailscale ACLs are the access boundary.
+For keeping an eye on things I use [**Prometheus**](https://prometheus.io/) to
+collect metrics and [**Grafana Loki**](https://grafana.com/oss/loki/) for logs,
+with [**Grafana Alloy**](https://grafana.com/docs/alloy/) running on every node
+to collect the logs and send them to Loki on the Pi. I look at all of it
+through [**Grafana**](https://grafana.com/), which sits on the tailnet at
+`grafana.gentoo-mine.ts.net` rather than being exposed to the world &mdash;
+there&rsquo;s no login, because Tailscale decides who can reach it. A handful of
+alerts watch the logging itself for the sort of thing that would otherwise go
+unnoticed: Loki running low on disk, logs not getting through, or a node that
+has stopped sending them.
 
-A `logging-alerts` PrometheusRule covers the bits that would silently rot:
-Loki PVC headroom, stalled ingest, dropped write bytes, and per-node Alloy
-coverage. All logging components run at `cluster-low` priority so they yield
-to end-user workloads under memory pressure on `saraneth`.
+I also run a second, separate Prometheus in the `lifestyle` namespace for
+personal things that aren&rsquo;t really about the cluster at all &mdash; air
+quality from a few [**Awair**](https://www.getawair.com/) monitors around the
+flat, figures from my [**Grocy**](https://grocy.info/) home inventory, and the
+state of the living-room TV.
 
-A second, independent **Lifestyle Prometheus** instance runs in the `lifestyle`
-namespace and scrapes personal (non-cluster) metrics. Current scrapers:
+## Claude
 
-- **Awair Element air quality** — three Awair Element monitors (bedroom, lounge,
-  study) polled via their local HTTP API, exposing CO₂, VOC, PM2.5, temperature,
-  humidity, and the Awair score. The exporter runs with `hostNetwork: true` on
-  the Pi to reach devices on the home LAN.
-- **Grocy** — home inventory and meal-planning metrics from the `claude-grocy`
-  namespace.
-- **LG TV** — power state, input, volume, and picture-settings metrics from
-  the living-room LG WebOS TV via the SSAP WebSocket protocol (bscpylgtv),
-  pinned to the Pi to reach the home LAN.
-
-## Claude bot infrastructure
-
-The `claude` namespace and its sibling `claude-*` namespaces host the
-infrastructure Claude (the AI assistant the cluster's owner collaborates with)
-relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
-`claude-grocy`, `claude-vestibule`, `claude-notebook`, `claude-printer-mcp`),
-a Prometheus metrics MCP, and
-`webhook-receiver`, a small aiohttp service exposed publicly at
-`webhook.k3s.fluv.net/github` that receives GitHub App webhooks and
-fans them out to in-cluster handlers (initially: a DeepSeek PR-review
-trigger and a replacement for the polling-based `claude-monitor`).
+A good deal of this cluster is built and looked after with the help of an AI
+assistant &mdash; Claude &mdash; which has a handful of its own small services
+running here, in the `claude` and `claude-*` namespaces. Most of them are little
+adapters that let it reach things I use day to day, like my shopping and my home
+inventory. There&rsquo;s also a webhook service at `webhook.k3s.fluv.net` so that
+GitHub can nudge the cluster when something happens &mdash; for example, to start
+an automated review when I open a pull request.
 
 ## End-user services
 
