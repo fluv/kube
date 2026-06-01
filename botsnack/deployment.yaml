@@ -43,3 +43,13 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
+          volumeMounts:
+            - name: opinions
+              mountPath: /app/opinions.json
+              subPath: opinions.json
+              readOnly: true
+      volumes:
+        - name: opinions
+          secret:
+            secretName: botsnack-opinions
+            optional: true
