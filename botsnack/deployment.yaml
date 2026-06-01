@@ -19,7 +19,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: botsnack
-          image: ghcr.io/fluv/botsnack:0.4.0
+          image: ghcr.io/fluv/botsnack:0.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -43,3 +43,13 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
+          volumeMounts:
+            - name: opinions
+              mountPath: /app/opinions.json
+              subPath: opinions.json
+              readOnly: true
+      volumes:
+        - name: opinions
+          secret:
+            secretName: botsnack-opinions
+            optional: true
