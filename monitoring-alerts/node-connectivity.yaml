@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-connectivity
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: node-pod-network
+      rules:
+        - alert: NodePodNetworkUnreachable
+          expr: |
+            (
+              up{job=~".*alloy.*", namespace="alloy"} == 0
+              * on(pod, namespace) group_left(node)
+              kube_pod_info{namespace="alloy"}
+            ) * on(node) group_left()
+              kube_node_status_condition{condition="Ready", status="true"}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} is Ready but its pod network is unreachable"
+            description: >-
+              Prometheus cannot scrape Alloy on node {{ $labels.node }} via the pod
+              network (flannel VxLAN), but the node reports Ready via the control plane.
+              This matches the Hetzner SDN initialisation failure seen in kube#465: the
+              node's inbound flannel routing is broken while API-server and kubelet
+              connectivity (Tailscale) remain intact. Check whether this is a recently
+              auto-scaled node; if so, verify the Hetzner private network is properly
+              attached and cross-node flannel VXLAN is working from other nodes.
