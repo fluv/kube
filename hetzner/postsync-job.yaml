@@ -41,7 +41,12 @@ spec:
           # ConfigMap a new tracked resource — that diff is what triggers the
           # ArgoCD sync that fires this PostSync hook. See hetzner/kustomization.yaml.
           image: python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97
-          command: [python3, /hook/update-cluster-config-secret.py]
+          command:
+            - sh
+            - -ec
+            - |
+              python3 /hook/update-cluster-config-secret.py
+              kubectl rollout restart deployment -n kube-system hcloud-cluster-autoscaler-hetzner-cluster-autoscaler
           env:
             - name: PATH
               value: /shared:/usr/local/bin:/usr/bin:/bin

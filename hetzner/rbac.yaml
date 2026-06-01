@@ -14,6 +14,10 @@ rules:
     resources: [secrets]
     resourceNames: [hcloud-init-data]
     verbs: [get, patch]
+  - apiGroups: [apps]
+    resources: [deployments]
+    resourceNames: [hcloud-cluster-autoscaler-hetzner-cluster-autoscaler]
+    verbs: [get, patch]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
