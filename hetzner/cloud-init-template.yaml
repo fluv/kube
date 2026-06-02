@@ -83,7 +83,17 @@ runcmd:
   # pool. A /32 is always correct regardless of actual allocation; a /24 can be
   # wrong and cause VXLAN traffic to be relayed via the wrong node.
   # The tag:k3s autoApprover in the tailnet ACL approves this automatically.
-  - tailscale set --advertise-routes=$(ip -4 addr show enp7s0 | awk '/inet /{split($2,a,"/"); print a[1]"/32"; exit}')
+  # Retry until confirmed: 'tailscale set' can silently succeed but leave the
+  # route un-registered if the daemon is still settling after 'tailscale up'.
+  # Verification uses 'tailscale debug prefs' to confirm the route was written
+  # to the local prefs store; the prefs check is immediate and doesn't require
+  # waiting for propagation to remote peers. See fluv/kube#499.
+  - |
+    PRIVATE_IP=$(ip -4 addr show enp7s0 | awk '/inet /{split($2,a,"/"); print a[1]; exit}')
+    until tailscale set --advertise-routes="${PRIVATE_IP}/32" 2>/dev/null &&
+          tailscale debug prefs 2>/dev/null | grep -qF "${PRIVATE_IP}"; do
+      sleep 2
+    done
 
   # Join the cluster as an agent node.
   # --node-ip: register the Tailscale IP so the control plane can reach this node.
