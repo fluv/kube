@@ -57,7 +57,7 @@ spec:
                 - |
                   set -e
                   kubectl rollout restart deployment/claude-grocy -n claude-grocy
-                  kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=300s
+                  kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=600s
               resources:
                 requests:
                   cpu: 10m
