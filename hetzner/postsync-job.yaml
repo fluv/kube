@@ -21,7 +21,7 @@ spec:
           # Copy the kubectl binary into the shared volume so the python
           # container (which has no kubectl) can run it.
           # Pinned digest matches kube/longhorn-disk-tagger/daemonset.yaml.
-          image: docker.io/bitnami/kubectl@sha256:9c362260ef11ec664c36f34e0cb263b5cacd5b2f64e4c9b93aa3c3dc95549315
+          image: docker.io/bitnami/kubectl@sha256:d7e2de67927af4b644c0631e114024e32062ffde7af8e6af1be532eda91656b0
           command: [sh, -c, "cp $(which kubectl) /shared/kubectl"]
           resources:
             requests:
