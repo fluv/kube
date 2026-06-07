@@ -24,22 +24,6 @@ spec:
       labels:
         app: printer-mcp
     spec:
-      # Pin to the Pi: the printer is at 192.168.1.251 on the home LAN, and
-      # while saraneth and any Hetzner autoscaler nodes can technically
-      # reach the LAN via Tailscale, every IPP submission would round-trip
-      # over the WAN — see the 2026-05-14 Longhorn-over-WAN bandwidth
-      # incident. Pi-only is also fail-closed: if the Pi is offline,
-      # printing wouldn't work from anywhere else anyway, so refusing to
-      # schedule is the honest signal.
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pi.home.arpa
       # No fsGroup — there's no mounted volume for the kubelet to chown.
       # Per-job state is in-process; tempdirs live in /tmp inside the
       # container's writable ephemeral layer.
