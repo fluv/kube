@@ -7,7 +7,7 @@ Namespace hosting a single service:
   jq filtering on read). Source in
   [fluv/notebook](https://github.com/fluv/notebook).
 
-Tools exposed: `list_namespaces`, `append`, `get`, `delete`.
+Tools exposed: `list_namespaces`, `describe_namespace`, `append`, `get`, `delete`, `search`.
 
 ## Storage shape
 
@@ -16,6 +16,12 @@ underlying JSONL is single-writer by design. Data lives on a
 ReadWriteOnce Longhorn PVC (`notebook-data`, 1Gi). Do not raise
 replicas or switch to RollingUpdate without redesigning the storage
 layer — overlapping writers during cutover would corrupt the JSONL.
+
+## Environment variables
+
+| Variable | Default | Effect |
+|---|---|---|
+| `NOTEBOOK_SENSITIVE_DEFAULT` | *(unset)* | When set to `exclude`, entries whose content contains `"exportable": false` are hidden from bare `get` and `search` calls. Pass `include_sensitive: true` per-call to override. Any other value (including unset) includes all entries. |
 
 ## Ingress basic auth
 

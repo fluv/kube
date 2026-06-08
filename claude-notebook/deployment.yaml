@@ -33,8 +33,11 @@ spec:
         fsGroup: 65532
       containers:
         - name: notebook
-          image: ghcr.io/fluv/notebook:0.5.2@sha256:269f3713ac4b160ddbda0e416cb4e2a520b4fe62aa6ef2f83faac6a097c7e02e
+          image: ghcr.io/fluv/notebook:0.5.2@sha256:8f7bb861c8fbc9a903334d6bdaf54d83b96446ef4d95468973c744b7f6af7406
           imagePullPolicy: IfNotPresent
+          env:
+            - name: NOTEBOOK_SENSITIVE_DEFAULT
+              value: "exclude"
           ports:
             - name: http
               containerPort: 8080
