@@ -35,6 +35,9 @@ spec:
         - name: notebook
           image: ghcr.io/fluv/notebook:0.5.2@sha256:8f7bb861c8fbc9a903334d6bdaf54d83b96446ef4d95468973c744b7f6af7406
           imagePullPolicy: IfNotPresent
+          env:
+            - name: NOTEBOOK_SENSITIVE_DEFAULT
+              value: "exclude"
           ports:
             - name: http
               containerPort: 8080
