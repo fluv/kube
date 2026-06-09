@@ -14,14 +14,9 @@
 #   sudo systemctl restart k3s         # control-plane node
 #   sudo systemctl restart k3s-agent   # worker nodes
 #
-# After applying, check for violations with:
-#   kubectl get events -A --field-selector reason=FailedCreate
-#   kubectl auth can-i --list --as=system:serviceaccount:default:default
-#
-# Exempted namespaces need host-level or privileged access:
-# - kube-system, kube-public, kube-node-lease: k8s system components
-# - longhorn-system: longhorn-driver-deployer runs as UID 0 (CSI requirement)
-# - tailscale: operator pods need NET_ADMIN for TUN device management
+# Namespace exemptions are NOT listed here — they are managed via
+# pod-security.kubernetes.io/enforce: privileged labels on individual
+# namespace objects in kube/pod-security/. ArgoCD keeps those in sync.
 apiVersion: apiserver.config.k8s.io/v1
 kind: AdmissionConfiguration
 plugins:
@@ -36,10 +31,4 @@ plugins:
       warn-version: "latest"
       audit: "restricted"
       audit-version: "latest"
-    exemptions:
-      namespaces:
-      - kube-system
-      - kube-public
-      - kube-node-lease
-      - longhorn-system
-      - tailscale
+    exemptions: {}
