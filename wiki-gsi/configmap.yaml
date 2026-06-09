@@ -78,10 +78,17 @@ data:
 
     $wgDiff3 = "/usr/bin/diff3";
   db-init.sql: |
-    -- Allow mediawiki user to connect from any pod IP, not just localhost.
-    -- The original DB was single-server so the user was bound to localhost.
-    -- This is idempotent: if mediawiki@% already exists, the UPDATE hits 0 rows.
-    UPDATE mysql.user SET Host='%' WHERE User='mediawiki' AND Host!='%';
+    -- Allow the mediawiki user to connect from pod IPs, not just localhost.
+    -- The restored DB came from a single-server install where the user was
+    -- bound to localhost. mysql.user has been a VIEW over mysql.global_priv
+    -- since MariaDB 10.4, so the host must be rewritten on the real grant
+    -- tables, not the view. Idempotent: re-runs match 0 rows once migrated,
+    -- so no statement errors on subsequent startups.
+    UPDATE mysql.global_priv  SET Host='%' WHERE User='mediawiki' AND Host='localhost';
+    UPDATE mysql.db           SET Host='%' WHERE User='mediawiki' AND Host='localhost';
+    UPDATE mysql.tables_priv  SET Host='%' WHERE User='mediawiki' AND Host='localhost';
+    UPDATE mysql.columns_priv SET Host='%' WHERE User='mediawiki' AND Host='localhost';
+    UPDATE mysql.procs_priv   SET Host='%' WHERE User='mediawiki' AND Host='localhost';
     FLUSH PRIVILEGES;
   apache-ports.conf: |
     Listen 8080
