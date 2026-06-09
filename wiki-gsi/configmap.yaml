@@ -12,7 +12,7 @@ data:
 
     $wgSitename = "GSI";
     $wgMetaNamespace = "Project";
-    $wgScriptPath = "/w";
+    $wgScriptPath = "";
     $wgArticlePath = "/wiki/$1";
     $wgServer = "https://gsi.gentoo-mine.ts.net";
     $wgStylePath = "$wgScriptPath/skins";
