@@ -37,6 +37,12 @@ data:
     $wgFileExtensions = [ 'png', 'gif', 'jpg', 'jpeg', 'webp', 'svg' ];
     $wgUseImageMagick = false;
 
+    // Pull media from Wikimedia Commons (foreign file repo). The 1.39 series
+    // carries the fix (from 1.39.14) for Wikimedia's User-Agent policy, so
+    // InstantCommons' requests are not throttled; the running image was
+    // checked to satisfy this before enabling.
+    $wgUseInstantCommons = true;
+
     // Language
     $wgLanguageCode = "sco";
 
