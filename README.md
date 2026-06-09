@@ -119,8 +119,8 @@ trigger and a replacement for the polling-based `claude-monitor`).
 
 The `wiki-gsi` namespace runs a private [**MediaWiki**](https://www.mediawiki.org/)
 instance at `gsi.gentoo-mine.ts.net` — a personal wiki recovered from a decade-old
-installation. It consists of a MariaDB 10.6 database (seeded from the original raw
-data directory) and a MediaWiki 1.39 LTS pod, both pinned to the Pi. The wiki is
+installation. It consists of a MariaDB 11.4 LTS database (seeded from the original
+raw data directory) and a MediaWiki 1.43 LTS pod, both pinned to the Pi. The wiki is
 private; only authenticated users with the `user` group or above can read or edit.
 
 We&rsquo;re running a single-user [**Mastodon**](https://joinmastodon.org/) instance on

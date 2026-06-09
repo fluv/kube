@@ -71,7 +71,7 @@ spec:
               memory: 256Mi
       containers:
         - name: mariadb
-          image: mariadb:10.11
+          image: mariadb:11.4
           args:
             - --init-file=/etc/mysql/init.sql
           ports:
@@ -85,13 +85,19 @@ spec:
             - name: db-init
               mountPath: /etc/mysql/init.sql
               subPath: db-init.sql
-          # The reseed source is already at this image's version (10.11), so
-          # MARIADB_AUTO_UPGRADE is a no-op on a clean boot and 3306 comes up
-          # promptly. The startupProbe is kept as a safety margin: should a
-          # future image bump (e.g. 11.4) land here before the source is
-          # re-prepared, the entrypoint would run mariadb-upgrade on a temporary
-          # socket with the TCP port closed, and the probe (30 x 10s = up to
-          # 5 min) holds liveness/readiness off so it is never killed mid-flight.
+          # The reseed sentinel is unchanged, so the existing 10.11 PVC is
+          # upgraded IN PLACE to 11.4 (MARIADB_AUTO_UPGRADE=1). This is
+          # deliberate: a reseed would restore the source's raw pre-1.35
+          # MediaWiki schema, which MediaWiki 1.43's updater refuses -- the live
+          # PVC already carries the 1.39 schema (from update.php), so the
+          # in-place path preserves it. Validated offline (10.11 -> 11.4
+          # mariadb-upgrade completes; MediaWiki 1.43 then serves). The
+          # entrypoint runs mariadb-upgrade on a temporary socket with the TCP
+          # port closed; the startupProbe (30 x 10s = up to 5 min) holds
+          # liveness/readiness off so it is never killed mid-flight. NOTE: the
+          # entrypoint's own readiness loop is ~30s; on the Pi's slow storage
+          # 10.11 -> 11.8 exceeded it, which is why 11.4 (which fit) is the
+          # target. The reseed source remains 10.11 at /home/claude/mw-test/data.
           startupProbe:
             tcpSocket:
               port: 3306

@@ -13,9 +13,14 @@
   },
   "packageRules": [
     {
-      "description": "Pin the wiki-gsi MariaDB image to the 10.11 series during the staged 10.6 -> 10.11 -> 11.4 upgrade (issue #521). Major bumps modify the data dir in place and must run mariadb-upgrade one stage at a time with verification between, not be applied automatically by renovate. Loosen to the next stage's ceiling as each stage lands.",
+      "description": "Pin the wiki-gsi MariaDB image to the 11.4 LTS series (issue #521). Major bumps modify the data dir in place via mariadb-upgrade, and on the Pi's slow storage 10.11 -> 11.8 exceeded the entrypoint's ~30s readiness window (11.4 fit) -- so cross-major bumps must be done deliberately with offline validation, not by renovate. 11.4 is LTS; revisit when 11.4 nears EOL.",
       "matchPackageNames": ["mariadb"],
-      "allowedVersions": "<10.12"
+      "allowedVersions": "<11.5"
+    },
+    {
+      "description": "Pin the wiki-gsi MediaWiki image to the 1.43 LTS series (issue #521). MediaWiki upgrades run update.php schema migrations and must be validated offline before landing, not applied automatically. 1.43 is LTS; revisit when it nears EOL.",
+      "matchPackageNames": ["mediawiki"],
+      "allowedVersions": "<1.44"
     },
     {
       "matchUpdateTypes": ["major"],
