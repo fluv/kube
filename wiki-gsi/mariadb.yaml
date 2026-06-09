@@ -35,7 +35,7 @@ spec:
         # either (a root-owned lost+found, if present, is left in place and
         # ignored by mariadbd).
         - name: reseed
-          image: alpine:3.19
+          image: alpine:3.23
           command:
             - sh
             - -c
