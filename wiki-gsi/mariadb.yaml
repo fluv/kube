@@ -27,6 +27,13 @@ spec:
         # half-migrated. Wiping and recopying from source restores a known-good
         # 10.3 directory that this 10.6 image can open. Sentinel-guarded so it
         # runs exactly once: subsequent pod starts skip it.
+        #
+        # Runs as uid 999 (same as mariadbd), not root: the host source is made
+        # world-readable so it can be read without root, and the copy creates
+        # files already owned by 999, so no chown is needed. The PVC's existing
+        # contents are 999-owned from prior runs, so the wipe needs no root
+        # either (a root-owned lost+found, if present, is left in place and
+        # ignored by mariadbd).
         - name: reseed
           image: alpine:3.19
           command:
@@ -38,9 +45,9 @@ spec:
                 exit 0
               fi
               echo "Wiping half-upgraded data and recopying pristine source..."
-              rm -rf /data/* /data/..?* /data/.[!.]*
-              cp -a /source/. /data/
-              chown -R 999:999 /data/
+              rm -rf /data/* /data/..?* /data/.[!.]* 2>/dev/null || true
+              cp -r /source/. /data/
+              chmod -R go-w,o-rx /data
               touch /data/.reseeded-from-source
               echo "Reseed complete"
           volumeMounts:
@@ -50,7 +57,8 @@ spec:
             - name: db-data
               mountPath: /data
           securityContext:
-            runAsUser: 0
+            runAsUser: 999
+            runAsGroup: 999
           resources:
             requests:
               cpu: 50m
