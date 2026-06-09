@@ -77,6 +77,12 @@ data:
     $wgScribuntoDefaultEngine = 'luastandalone';
 
     $wgDiff3 = "/usr/bin/diff3";
+  db-init.sql: |
+    -- Allow mediawiki user to connect from any pod IP, not just localhost.
+    -- The original DB was single-server so the user was bound to localhost.
+    -- This is idempotent: if mediawiki@% already exists, the UPDATE hits 0 rows.
+    UPDATE mysql.user SET Host='%' WHERE User='mediawiki' AND Host!='%';
+    FLUSH PRIVILEGES;
   apache-ports.conf: |
     Listen 8080
     <IfModule ssl_module>
