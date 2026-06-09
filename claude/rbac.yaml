@@ -336,6 +336,9 @@ subjects:
 # Grant pod-recycle access in longhorn-system. Needed for stale-IP
 # recovery on Longhorn DaemonSets (longhorn-manager, longhorn-csi-plugin,
 # engine-image) after CNI/networking changes.
+# Uses claude-pod-restart (pods/delete only), not claude-namespace-admin,
+# to avoid granting pods/exec in a namespace that runs root containers
+# (longhorn-driver-deployer runs as UID 0).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -344,7 +347,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: claude-namespace-admin
+  name: claude-pod-restart
 subjects:
   - kind: ServiceAccount
     name: claude
@@ -368,6 +371,8 @@ subjects:
 ---
 # Grant pod-recycle access in cert-manager. Needed for stale-IP recovery
 # on cert-manager pods after CNI/networking changes.
+# Uses claude-pod-restart (pods/delete only), not claude-namespace-admin,
+# to avoid over-granting exec and secrets access.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -376,7 +381,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: claude-namespace-admin
+  name: claude-pod-restart
 subjects:
   - kind: ServiceAccount
     name: claude

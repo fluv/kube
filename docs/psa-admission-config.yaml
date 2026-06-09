@@ -1,0 +1,45 @@
+# Pod Security Admission — cluster-wide default configuration
+#
+# This file is NOT ArgoCD-managed. Deploy manually to both server nodes:
+#
+#   scp docs/psa-admission-config.yaml pi:/etc/rancher/k3s/admission/psa.yaml
+#   scp docs/psa-admission-config.yaml saraneth:/etc/rancher/k3s/admission/psa.yaml
+#
+# Then add to /etc/rancher/k3s/config.yaml on both nodes:
+#
+#   kube-apiserver-arg:
+#     - "admission-control-config-file=/etc/rancher/k3s/admission/psa.yaml"
+#
+# And restart k3s:
+#   sudo systemctl restart k3s         # control-plane node
+#   sudo systemctl restart k3s-agent   # worker nodes
+#
+# After applying, check for violations with:
+#   kubectl get events -A --field-selector reason=FailedCreate
+#   kubectl auth can-i --list --as=system:serviceaccount:default:default
+#
+# Exempted namespaces need host-level or privileged access:
+# - kube-system, kube-public, kube-node-lease: k8s system components
+# - longhorn-system: longhorn-driver-deployer runs as UID 0 (CSI requirement)
+# - tailscale: operator pods need NET_ADMIN for TUN device management
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: PodSecurity
+  configuration:
+    apiVersion: pod-security.admission.config.k8s.io/v1
+    kind: PodSecurityConfiguration
+    defaults:
+      enforce: "baseline"
+      enforce-version: "latest"
+      warn: "restricted"
+      warn-version: "latest"
+      audit: "restricted"
+      audit-version: "latest"
+    exemptions:
+      namespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - longhorn-system
+      - tailscale
