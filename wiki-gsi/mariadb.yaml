@@ -67,7 +67,7 @@ spec:
               memory: 256Mi
       containers:
         - name: mariadb
-          image: mariadb:10.6
+          image: mariadb:10.11
           args:
             - --init-file=/etc/mysql/init.sql
           ports:
@@ -81,11 +81,13 @@ spec:
             - name: db-init
               mountPath: /etc/mysql/init.sql
               subPath: db-init.sql
-          # First boot runs mariadb-upgrade (10.3 data -> 10.6). The entrypoint
-          # serves that on a temporary socket with the TCP port closed, so 3306
-          # refuses connections until the upgrade finishes and the real server
-          # binds. A startupProbe holds liveness/readiness off until then
-          # (30 x 10s = up to 5 min) so the upgrade is never killed mid-flight.
+          # First boot on a new image runs mariadb-upgrade (here 10.6 -> 10.11,
+          # part of the staged 10.6 -> 10.11 -> 11.4 path in issue #521). The
+          # entrypoint serves that on a temporary socket with the TCP port
+          # closed, so 3306 refuses connections until the upgrade finishes and
+          # the real server binds. A startupProbe holds liveness/readiness off
+          # until then (30 x 10s = up to 5 min) so the upgrade is never killed
+          # mid-flight.
           startupProbe:
             tcpSocket:
               port: 3306
