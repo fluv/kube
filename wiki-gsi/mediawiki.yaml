@@ -22,7 +22,7 @@ spec:
         runAsNonRoot: true
       initContainers:
         - name: update-schema
-          image: mediawiki:1.39
+          image: mediawiki:1.45
           command:
             - php
             - maintenance/update.php
@@ -60,7 +60,7 @@ spec:
               subPath: apache-ports.conf
       containers:
         - name: mediawiki
-          image: mediawiki:1.39
+          image: mediawiki:1.45
           ports:
             - containerPort: 8080
           env:
