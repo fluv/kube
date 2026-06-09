@@ -31,24 +31,14 @@ spec:
             - name: db-data
               mountPath: /var/lib/mysql
           livenessProbe:
-            exec:
-              command:
-                - mysqladmin
-                - ping
-                - -h
-                - localhost
+            tcpSocket:
+              port: 3306
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
           readinessProbe:
-            exec:
-              command:
-                - mysql
-                - -u
-                - mediawiki
-                - -e
-                - "SELECT 1"
-                - mediawiki
+            tcpSocket:
+              port: 3306
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
