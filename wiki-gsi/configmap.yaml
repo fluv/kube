@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wiki-gsi-settings
+  namespace: wiki-gsi
+data:
+  LocalSettings.php: |
+    <?php
+    if ( !defined( 'MEDIAWIKI' ) ) {
+      exit;
+    }
+
+    $wgSitename = "GSI";
+    $wgMetaNamespace = "Project";
+    $wgScriptPath = "/w";
+    $wgArticlePath = "/wiki/$1";
+    $wgServer = "https://gsi.gentoo-mine.ts.net";
+    $wgStylePath = "$wgScriptPath/skins";
+    $wgResourceBasePath = $wgScriptPath;
+
+    // Database
+    $wgDBtype = "mysql";
+    $wgDBserver = "mariadb";
+    $wgDBname = "mediawiki";
+    $wgDBuser = "mediawiki";
+    $wgDBpassword = getenv( 'MEDIAWIKI_DB_PASSWORD' );
+    $wgDBprefix = "gsi_";
+    $wgDBTableOptions = "ENGINE=InnoDB, DEFAULT CHARSET=binary";
+
+    // Cache — no memcached in k8s, APCu if available
+    $wgMainCacheType = CACHE_ACCEL;
+    $wgMemCachedServers = [];
+
+    // Uploads
+    $wgEnableUploads = true;
+    $wgUploadDirectory = "$IP/images";
+    $wgFileExtensions = [ 'png', 'gif', 'jpg', 'jpeg', 'webp', 'svg' ];
+    $wgUseImageMagick = false;
+
+    // Language
+    $wgLanguageCode = "sco";
+
+    // Credentials — injected from Secret, not stored in git
+    $wgSecretKey = getenv( 'MEDIAWIKI_SECRET_KEY' );
+    $wgUpgradeKey = getenv( 'MEDIAWIKI_UPGRADE_KEY' );
+
+    // Private wiki
+    $wgGroupPermissions['*']['edit'] = false;
+    $wgGroupPermissions['*']['read'] = false;
+    $wgGroupPermissions['*']['createaccount'] = false;
+    $wgGroupPermissions['user']['read'] = true;
+    $wgGroupPermissions['user']['edit'] = true;
+    $wgGroupPermissions['sysop']['edit'] = true;
+
+    // Custom groups from original wiki
+    $wgGroupPermissions['deceased']['read'] = true;
+    $wgGroupPermissions['observer']['read'] = true;
+    $wgGroupPermissions['observer']['edit'] = true;
+    $wgGroupPermissions['clergy']['autoconfirmed'] = true;
+    $wgRemoveGroups['clergy'] = [ 'deceased' ];
+    $wgAddGroups['clergy'] = [ 'clergy', 'deceased' ];
+
+    $wgRestrictDisplayTitle = false;
+    $wgNamespacesWithSubpages[NS_MAIN] = true;
+    $wgWhitelistRead = [ 'Reading list', 'Comics' ];
+
+    // Skin
+    $wgDefaultSkin = "vector";
+    wfLoadSkin( 'Vector' );
+    wfLoadSkin( 'MonoBook' );
+
+    // Extensions (all bundled with mediawiki:1.39)
+    wfLoadExtension( 'ParserFunctions' );
+    wfLoadExtension( 'Cite' );
+    wfLoadExtension( 'SyntaxHighlight_GeSHi' );
+    wfLoadExtension( 'Scribunto' );
+    $wgScribuntoDefaultEngine = 'luastandalone';
+
+    $wgDiff3 = "/usr/bin/diff3";
+  apache-ports.conf: |
+    Listen 8080
+    <IfModule ssl_module>
+        Listen 8443
+    </IfModule>
+    <IfModule mod_gnutls.c>
+        Listen 8443
+    </IfModule>

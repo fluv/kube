@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wiki-gsi-db
+  namespace: wiki-gsi
+  annotations:
+    recurring-job.longhorn.io/b2-daily-backup: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-durable
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wiki-gsi-images
+  namespace: wiki-gsi
+  annotations:
+    recurring-job.longhorn.io/b2-daily-backup: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
