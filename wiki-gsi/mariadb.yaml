@@ -16,6 +16,11 @@ spec:
     metadata:
       labels:
         app: mariadb
+      annotations:
+        # db-init.sql is mounted via subPath, which does not receive ConfigMap
+        # updates on a running pod. Bump when db-init.sql changes so the pod
+        # rolls and re-reads it. Incremented when FLUSH PRIVILEGES was removed.
+        wiki-gsi.fluv/db-init-revision: "2"
     spec:
       nodeSelector:
         kubernetes.io/hostname: pi.home.arpa
