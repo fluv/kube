@@ -13,6 +13,11 @@
   },
   "packageRules": [
     {
+      "description": "Pin the wiki-gsi MariaDB image to the 10.6 series. The restored data directory is a single-server 10.3 dump with no root@localhost, so the entrypoint's auto-upgrade step aborts on a version bump (10.11 broke it). Bumps beyond 10.6 must be done deliberately as part of the staged upgrade plan, not by renovate.",
+      "matchPackageNames": ["mariadb"],
+      "allowedVersions": "<10.7"
+    },
+    {
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["renovate", "major-upgrade"]
