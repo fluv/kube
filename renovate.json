@@ -13,9 +13,9 @@
   },
   "packageRules": [
     {
-      "description": "Pin the wiki-gsi MariaDB image to the 10.6 series. The restored data directory is a single-server 10.3 dump with no root@localhost, so the entrypoint's auto-upgrade step aborts on a version bump (10.11 broke it). Bumps beyond 10.6 must be done deliberately as part of the staged upgrade plan, not by renovate.",
+      "description": "Pin the wiki-gsi MariaDB image to the 10.11 series during the staged 10.6 -> 10.11 -> 11.4 upgrade (issue #521). Major bumps modify the data dir in place and must run mariadb-upgrade one stage at a time with verification between, not be applied automatically by renovate. Loosen to the next stage's ceiling as each stage lands.",
       "matchPackageNames": ["mariadb"],
-      "allowedVersions": "<10.7"
+      "allowedVersions": "<10.12"
     },
     {
       "matchUpdateTypes": ["major"],
