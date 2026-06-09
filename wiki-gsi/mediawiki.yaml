@@ -33,6 +33,32 @@ spec:
         runAsGroup: 33
         runAsNonRoot: true
       initContainers:
+        # The <DynamicPageList> (Intersection) extension the farm's pages use is
+        # not bundled in the stock image. Clone its REL1_43 branch into a shared
+        # volume. Non-fatal on purpose: if the fetch fails the pod still starts
+        # (LocalSettings only loads the extension when the dir is present), so a
+        # GitHub hiccup can never take the wiki down. A custom image is the
+        # better long-term home for this plus the rest of the farm extensions.
+        - name: fetch-dpl
+          image: alpine:3.23
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+            runAsNonRoot: true
+          command:
+            - sh
+            - -c
+            - >-
+              wget -qO-
+              https://codeload.github.com/wikimedia/mediawiki-extensions-intersection/tar.gz/refs/heads/REL1_43
+              | tar xz -C /ext --strip-components=1
+              || echo "DPL fetch failed; wiki will start without it"
+          volumeMounts:
+            - name: dpl-ext
+              mountPath: /ext
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
         - name: update-schema
           image: mediawiki:1.43
           command:
@@ -71,6 +97,8 @@ spec:
             - name: apache-ports
               mountPath: /etc/apache2/ports.conf
               subPath: apache-ports.conf
+            - name: dpl-ext
+              mountPath: /var/www/html/extensions/DynamicPageList
       containers:
         - name: mediawiki
           image: mediawiki:1.43
@@ -101,6 +129,8 @@ spec:
             - name: apache-ports
               mountPath: /etc/apache2/ports.conf
               subPath: apache-ports.conf
+            - name: dpl-ext
+              mountPath: /var/www/html/extensions/DynamicPageList
           livenessProbe:
             httpGet:
               path: /wiki/Main_Page
@@ -135,6 +165,8 @@ spec:
             items:
               - key: apache-ports.conf
                 path: apache-ports.conf
+        - name: dpl-ext
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

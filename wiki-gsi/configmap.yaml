@@ -83,6 +83,19 @@ data:
     $wgScribuntoDefaultEngine = 'luastandalone';
 
     $wgDiff3 = "/usr/bin/diff3";
+
+    // Logo: the restored Wiki.png lives under the images upload dir
+    // (/images/b/bc/Wiki.png, copied into the images PVC). $wgLogo was renamed
+    // to $wgLogos (1x/1.5x/2x/icon/wordmark) in MediaWiki 1.35.
+    $wgLogos = [ '1x' => "$wgScriptPath/images/b/bc/Wiki.png" ];
+
+    // <DynamicPageList> (Intersection). Fetched into extensions/DynamicPageList
+    // by the fetch-dpl init container; load only if its extension.json is
+    // actually present (the dir is an always-mounted emptyDir, so check the
+    // file) so a failed or partial fetch never fatals the wiki.
+    if ( file_exists( "$IP/extensions/DynamicPageList/extension.json" ) ) {
+        wfLoadExtension( 'DynamicPageList' );
+    }
   db-init.sql: |
     -- Allow the mediawiki user to connect from pod IPs, not just localhost.
     -- The restored DB came from a single-server install where the user was
