@@ -14,6 +14,14 @@ spec:
     metadata:
       labels:
         app: mediawiki
+      annotations:
+        # Bump in lockstep with the MariaDB reseed sentinel in mariadb.yaml.
+        # A reseed restores the raw dump schema (no actor-migration columns,
+        # etc.), so MediaWiki must re-run update.php -- its update-schema init
+        # container -- against the fresh DB or every content query fails with
+        # "Unknown column 'rev_actor'". Changing this value rolls the
+        # deployment, which re-runs that init container.
+        wiki-gsi.fluv/db-seed: "v3"
     spec:
       securityContext:
         fsGroup: 33
