@@ -89,7 +89,14 @@ data:
     UPDATE mysql.tables_priv  SET Host='%' WHERE User='mediawiki' AND Host='localhost';
     UPDATE mysql.columns_priv SET Host='%' WHERE User='mediawiki' AND Host='localhost';
     UPDATE mysql.procs_priv   SET Host='%' WHERE User='mediawiki' AND Host='localhost';
-    FLUSH PRIVILEGES;
+    -- Deliberately NO `FLUSH PRIVILEGES` here. This file runs via --init-file on
+    -- EVERY server start, including the MariaDB entrypoint's upgrade temp server,
+    -- which is launched with --skip-grant-tables. A FLUSH there reloads the grant
+    -- tables and cancels skip-grant-tables mid-upgrade, after which the
+    -- entrypoint's own pre-upgrade backup / mariadb-upgrade (which connect as the
+    -- unauthenticated OS user mysql@localhost) are denied and the upgrade aborts
+    -- (broke the 10.11 -> 11.4 bump). The UPDATEs above are plain DML and persist
+    -- to disk regardless; the real (final) server loads them on its normal start.
   apache-ports.conf: |
     Listen 8080
     <IfModule ssl_module>
