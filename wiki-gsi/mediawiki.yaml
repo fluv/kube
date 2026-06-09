@@ -40,7 +40,7 @@ spec:
         # GitHub hiccup can never take the wiki down. A custom image is the
         # better long-term home for this plus the rest of the farm extensions.
         - name: fetch-dpl
-          image: alpine:3.23
+          image: alpine:3.24
           securityContext:
             runAsUser: 33
             runAsGroup: 33
