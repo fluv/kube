@@ -20,35 +20,39 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: pi.home.arpa
       initContainers:
-        # One-shot re-seed of the DB data directory from the pristine 10.3
-        # source on the Pi host. A prior 10.11 image (renovate #515) began an
-        # InnoDB redo-log upgrade against the restored single-server data dir,
-        # which has no root@localhost for the upgrade step, leaving the volume
-        # half-migrated. Wiping and recopying from source restores a known-good
-        # 10.3 directory that this 10.6 image can open. Sentinel-guarded so it
-        # runs exactly once: subsequent pod starts skip it.
+        # One-shot re-seed of the DB data directory from the validated source
+        # on the Pi host. The restored single-server dump had no root@localhost
+        # (only root@<original-host>, password-protected), so the MariaDB Docker
+        # entrypoint -- which connects to root@localhost passwordless to run its
+        # in-place upgrade -- was denied and crashlooped on the 10.6 -> 10.11
+        # bump. The source at /home/claude/mw-test/data is that dump already
+        # upgraded to 10.11 and given a passwordless root@localhost, validated
+        # offline in a throwaway pod; reseeding from it lands a known-good 10.11
+        # volume with no in-cluster upgrade needed. The pristine 10.3 dump
+        # remains at /home/claude/mw/mysql/mysql as a backup. Sentinel-guarded
+        # so it runs exactly once: subsequent pod starts skip it.
         #
-        # Runs as uid 999 (same as mariadbd), not root: the host source is made
-        # world-readable so it can be read without root, and the copy creates
-        # files already owned by 999, so no chown is needed. The PVC's existing
-        # contents are 999-owned from prior runs, so the wipe needs no root
-        # either (a root-owned lost+found, if present, is left in place and
-        # ignored by mariadbd).
+        # Runs as uid 999 (same as mariadbd), not root: source files are 999-
+        # owned (written by the prep pod) or world-readable, so they read
+        # without root, and the copy creates files already owned by 999. The
+        # PVC's existing contents are 999-owned from prior runs, so the wipe
+        # needs no root (a root-owned lost+found, if present, is left in place
+        # and ignored by mariadbd).
         - name: reseed
           image: alpine:3.23
           command:
             - sh
             - -c
             - |
-              if [ -f /data/.reseeded-from-source-v2 ]; then
+              if [ -f /data/.reseeded-from-source-v3 ]; then
                 echo "Already reseeded, skipping"
                 exit 0
               fi
-              echo "Wiping half-upgraded data and recopying pristine source..."
+              echo "Wiping PVC and copying validated 10.11 source..."
               rm -rf /data/* /data/..?* /data/.[!.]* 2>/dev/null || true
               cp -r /source/. /data/
               chmod -R go-w,o-rx /data
-              touch /data/.reseeded-from-source-v2
+              touch /data/.reseeded-from-source-v3
               echo "Reseed complete"
           volumeMounts:
             - name: db-source
@@ -81,13 +85,13 @@ spec:
             - name: db-init
               mountPath: /etc/mysql/init.sql
               subPath: db-init.sql
-          # First boot on a new image runs mariadb-upgrade (here 10.6 -> 10.11,
-          # part of the staged 10.6 -> 10.11 -> 11.4 path in issue #521). The
-          # entrypoint serves that on a temporary socket with the TCP port
-          # closed, so 3306 refuses connections until the upgrade finishes and
-          # the real server binds. A startupProbe holds liveness/readiness off
-          # until then (30 x 10s = up to 5 min) so the upgrade is never killed
-          # mid-flight.
+          # The reseed source is already at this image's version (10.11), so
+          # MARIADB_AUTO_UPGRADE is a no-op on a clean boot and 3306 comes up
+          # promptly. The startupProbe is kept as a safety margin: should a
+          # future image bump (e.g. 11.4) land here before the source is
+          # re-prepared, the entrypoint would run mariadb-upgrade on a temporary
+          # socket with the TCP port closed, and the probe (30 x 10s = up to
+          # 5 min) holds liveness/readiness off so it is never killed mid-flight.
           startupProbe:
             tcpSocket:
               port: 3306
@@ -118,7 +122,7 @@ spec:
       volumes:
         - name: db-source
           hostPath:
-            path: /home/claude/mw/mysql/mysql
+            path: /home/claude/mw-test/data
             type: Directory
         - name: db-data
           persistentVolumeClaim:
