@@ -15,6 +15,9 @@ spec:
     spec:
       securityContext:
         fsGroup: 33
+        runAsUser: 33
+        runAsGroup: 33
+        runAsNonRoot: true
       initContainers:
         - name: update-schema
           image: mediawiki:1.39
@@ -22,6 +25,12 @@ spec:
             - php
             - maintenance/update.php
             - --quick
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
           env:
             - name: MEDIAWIKI_DB_PASSWORD
               valueFrom:
@@ -44,11 +53,14 @@ spec:
               subPath: LocalSettings.php
             - name: images
               mountPath: /var/www/html/images
+            - name: apache-ports
+              mountPath: /etc/apache2/ports.conf
+              subPath: apache-ports.conf
       containers:
         - name: mediawiki
           image: mediawiki:1.39
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           env:
             - name: MEDIAWIKI_DB_PASSWORD
               valueFrom:
@@ -71,10 +83,13 @@ spec:
               subPath: LocalSettings.php
             - name: images
               mountPath: /var/www/html/images
+            - name: apache-ports
+              mountPath: /etc/apache2/ports.conf
+              subPath: apache-ports.conf
           livenessProbe:
             httpGet:
               path: /wiki/Main_Page
-              port: 80
+              port: 8080
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
@@ -82,7 +97,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /wiki/Main_Page
-              port: 80
+              port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -99,6 +114,12 @@ spec:
         - name: images
           persistentVolumeClaim:
             claimName: wiki-gsi-images
+        - name: apache-ports
+          configMap:
+            name: wiki-gsi-settings
+            items:
+              - key: apache-ports.conf
+                path: apache-ports.conf
 ---
 apiVersion: v1
 kind: Service
@@ -111,4 +132,4 @@ spec:
     app: mediawiki
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080

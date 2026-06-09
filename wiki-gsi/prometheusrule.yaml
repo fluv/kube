@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: wiki-gsi
+  namespace: wiki-gsi
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: wiki-gsi
+      rules:
+        - alert: WikiGsiMediawikiDown
+          expr: kube_deployment_status_replicas_available{namespace="wiki-gsi", deployment="mediawiki"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: GSI wiki is unavailable
+            description: The mediawiki deployment has had zero available replicas for 5 minutes.
+
+        - alert: WikiGsiMariadbDown
+          expr: kube_deployment_status_replicas_available{namespace="wiki-gsi", deployment="mariadb"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: GSI wiki database is unavailable
+            description: The MariaDB deployment has had zero available replicas for 5 minutes. The wiki is down and data may be at risk.
+
+        - alert: WikiGsiDatabasePVCNearlyFull
+          expr: |
+            kubelet_volume_stats_available_bytes{namespace="wiki-gsi", persistentvolumeclaim="wiki-gsi-db"}
+            / kubelet_volume_stats_capacity_bytes{namespace="wiki-gsi", persistentvolumeclaim="wiki-gsi-db"}
+            < 0.1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: GSI wiki database PVC nearly full
+            description: The wiki-gsi-db PVC has less than 10% free space remaining.
