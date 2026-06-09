@@ -9,6 +9,8 @@ kind: Job
 metadata:
   name: wiki-gsi-seed
   namespace: wiki-gsi
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   ttlSecondsAfterFinished: 86400
   template:
@@ -19,6 +21,12 @@ spec:
       initContainers:
         - name: seed-db
           image: alpine:3.19
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
           command:
             - sh
             - -c
@@ -42,6 +50,12 @@ spec:
       containers:
         - name: seed-images
           image: alpine:3.19
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
           command:
             - sh
             - -c
