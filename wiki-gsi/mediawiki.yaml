@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediawiki
+  namespace: wiki-gsi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mediawiki
+  template:
+    metadata:
+      labels:
+        app: mediawiki
+    spec:
+      securityContext:
+        fsGroup: 33
+      initContainers:
+        - name: update-schema
+          image: mediawiki:1.39
+          command:
+            - php
+            - maintenance/update.php
+            - --quick
+          env:
+            - name: MEDIAWIKI_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wiki-gsi-secret
+                  key: db-password
+            - name: MEDIAWIKI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wiki-gsi-secret
+                  key: secret-key
+            - name: MEDIAWIKI_UPGRADE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wiki-gsi-secret
+                  key: upgrade-key
+          volumeMounts:
+            - name: local-settings
+              mountPath: /var/www/html/LocalSettings.php
+              subPath: LocalSettings.php
+            - name: images
+              mountPath: /var/www/html/images
+      containers:
+        - name: mediawiki
+          image: mediawiki:1.39
+          ports:
+            - containerPort: 80
+          env:
+            - name: MEDIAWIKI_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wiki-gsi-secret
+                  key: db-password
+            - name: MEDIAWIKI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wiki-gsi-secret
+                  key: secret-key
+            - name: MEDIAWIKI_UPGRADE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wiki-gsi-secret
+                  key: upgrade-key
+          volumeMounts:
+            - name: local-settings
+              mountPath: /var/www/html/LocalSettings.php
+              subPath: LocalSettings.php
+            - name: images
+              mountPath: /var/www/html/images
+          livenessProbe:
+            httpGet:
+              path: /wiki/Main_Page
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /wiki/Main_Page
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: local-settings
+          configMap:
+            name: wiki-gsi-settings
+        - name: images
+          persistentVolumeClaim:
+            claimName: wiki-gsi-images
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediawiki
+  namespace: wiki-gsi
+spec:
+  type: ClusterIP
+  selector:
+    app: mediawiki
+  ports:
+    - port: 80
+      targetPort: 80

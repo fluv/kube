@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: wiki-gsi
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: wiki-gsi
+  project: default
+  source:
+    path: wiki-gsi
+    repoURL: https://github.com/fluv/kube.git
+    targetRevision: HEAD
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

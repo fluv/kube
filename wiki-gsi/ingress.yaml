@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wiki-gsi
+  namespace: wiki-gsi
+  annotations:
+    tailscale.com/hostname: gsi
+    tailscale.com/proxy-class: spread-across-nodes
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - gsi
+  rules:
+    - host: gsi
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mediawiki
+                port:
+                  number: 80
