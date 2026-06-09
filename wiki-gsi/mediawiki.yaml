@@ -36,13 +36,18 @@ spec:
         # GitHub hiccup can never take the wiki down. A custom image is the
         # better long-term home for this plus the rest of the farm extensions.
         - name: fetch-dpl
-          image: alpine/git:latest
+          image: alpine:3.23
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+            runAsNonRoot: true
           command:
             - sh
             - -c
             - >-
-              git clone --depth 1 -b REL1_43
-              https://github.com/wikimedia/mediawiki-extensions-intersection /ext
+              wget -qO-
+              https://codeload.github.com/wikimedia/mediawiki-extensions-intersection/tar.gz/refs/heads/REL1_43
+              | tar xz -C /ext --strip-components=1
               || echo "DPL fetch failed; wiki will start without it"
           volumeMounts:
             - name: dpl-ext

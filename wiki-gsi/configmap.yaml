@@ -83,10 +83,11 @@ data:
     // to $wgLogos (1x/1.5x/2x/icon/wordmark) in MediaWiki 1.35.
     $wgLogos = [ '1x' => "$wgScriptPath/images/b/bc/Wiki.png" ];
 
-    // <DynamicPageList> (Intersection). Cloned into extensions/DynamicPageList
-    // by the fetch-dpl init container; load only if present so a failed fetch
-    // never fatals the wiki (it just renders without DPL until the next fetch).
-    if ( is_dir( "$IP/extensions/DynamicPageList" ) ) {
+    // <DynamicPageList> (Intersection). Fetched into extensions/DynamicPageList
+    // by the fetch-dpl init container; load only if its extension.json is
+    // actually present (the dir is an always-mounted emptyDir, so check the
+    // file) so a failed or partial fetch never fatals the wiki.
+    if ( file_exists( "$IP/extensions/DynamicPageList/extension.json" ) ) {
         wfLoadExtension( 'DynamicPageList' );
     }
   db-init.sql: |
