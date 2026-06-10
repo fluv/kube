@@ -159,7 +159,7 @@ As such:
   from over-scheduling
 * two custom PriorityClasses control which workloads actually get resources on
   the VPS during a Pi outage: `cluster-critical` (value 1000000) for services
-  like Mastodon, Authentik, Argo CD, cert-manager and ingress-nginx, and
+  like Mastodon, Argo CD, cert-manager and ingress-nginx, and
   `cluster-low` (value 100, global default) for everything else. When the VPS
   runs low on memory, low-priority pods are preempted to make room for critical
   ones
