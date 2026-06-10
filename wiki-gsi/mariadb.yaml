@@ -22,61 +22,9 @@ spec:
         # rolls and re-reads it. Incremented when FLUSH PRIVILEGES was removed.
         wiki-gsi.fluv/db-init-revision: "2"
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: pi.home.arpa
-      initContainers:
-        # One-shot re-seed of the DB data directory from the validated source
-        # on the Pi host. The restored single-server dump had no root@localhost
-        # (only root@<original-host>, password-protected), so the MariaDB Docker
-        # entrypoint -- which connects to root@localhost passwordless to run its
-        # in-place upgrade -- was denied and crashlooped on the 10.6 -> 10.11
-        # bump. The source at /home/claude/mw-test/data is that dump already
-        # upgraded to 10.11 and given a passwordless root@localhost, validated
-        # offline in a throwaway pod; reseeding from it lands a known-good 10.11
-        # volume with no in-cluster upgrade needed. The pristine 10.3 dump
-        # remains at /home/claude/mw/mysql/mysql as a backup. Sentinel-guarded
-        # so it runs exactly once: subsequent pod starts skip it.
-        #
-        # Runs as uid 999 (same as mariadbd), not root: source files are 999-
-        # owned (written by the prep pod) or world-readable, so they read
-        # without root, and the copy creates files already owned by 999. The
-        # PVC's existing contents are 999-owned from prior runs, so the wipe
-        # needs no root (a root-owned lost+found, if present, is left in place
-        # and ignored by mariadbd).
-        - name: reseed
-          image: alpine:3.24
-          command:
-            - sh
-            - -c
-            - |
-              if [ -f /data/.reseeded-from-source-v3 ]; then
-                echo "Already reseeded, skipping"
-                exit 0
-              fi
-              echo "Wiping PVC and copying validated 10.11 source..."
-              rm -rf /data/* /data/..?* /data/.[!.]* 2>/dev/null || true
-              cp -r /source/. /data/
-              chmod -R go-w,o-rx /data
-              touch /data/.reseeded-from-source-v3
-              echo "Reseed complete"
-          volumeMounts:
-            - name: db-source
-              mountPath: /source
-              readOnly: true
-            - name: db-data
-              mountPath: /data
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              memory: 256Mi
       containers:
         - name: mariadb
-          image: mariadb:11.4
+          image: mariadb:11.4.12
           args:
             - --init-file=/etc/mysql/init.sql
           ports:
@@ -90,19 +38,12 @@ spec:
             - name: db-init
               mountPath: /etc/mysql/init.sql
               subPath: db-init.sql
-          # The reseed sentinel is unchanged, so the existing 10.11 PVC is
-          # upgraded IN PLACE to 11.4 (MARIADB_AUTO_UPGRADE=1). This is
-          # deliberate: a reseed would restore the source's raw pre-1.35
-          # MediaWiki schema, which MediaWiki 1.43's updater refuses -- the live
-          # PVC already carries the 1.39 schema (from update.php), so the
-          # in-place path preserves it. Validated offline (10.11 -> 11.4
-          # mariadb-upgrade completes; MediaWiki 1.43 then serves). The
-          # entrypoint runs mariadb-upgrade on a temporary socket with the TCP
-          # port closed; the startupProbe (30 x 10s = up to 5 min) holds
-          # liveness/readiness off so it is never killed mid-flight. NOTE: the
-          # entrypoint's own readiness loop is ~30s; on the Pi's slow storage
-          # 10.11 -> 11.8 exceeded it, which is why 11.4 (which fit) is the
-          # target. The reseed source remains 10.11 at /home/claude/mw-test/data.
+          # MARIADB_AUTO_UPGRADE=1: the entrypoint runs mariadb-upgrade on a
+          # temporary socket with the TCP port closed; the startupProbe
+          # (30 x 10s = up to 5 min) holds liveness/readiness off so it is
+          # never killed mid-flight. NOTE: the entrypoint's own readiness loop
+          # is ~30s; on the Pi's slow storage 10.11 -> 11.8 exceeded it, which
+          # is why 11.4 (which fit) is the target.
           startupProbe:
             tcpSocket:
               port: 3306
@@ -131,10 +72,6 @@ spec:
             runAsUser: 999
             runAsGroup: 999
       volumes:
-        - name: db-source
-          hostPath:
-            path: /home/claude/mw-test/data
-            type: Directory
         - name: db-data
           persistentVolumeClaim:
             claimName: wiki-gsi-db
