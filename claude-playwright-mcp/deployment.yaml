@@ -49,9 +49,8 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 30
           securityContext:
-            # Chromium with --no-sandbox runs as root; explicit here so a
-            # future image change that drops root is visible in the diff.
-            runAsNonRoot: false
+            runAsNonRoot: true
+            runAsUser: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]

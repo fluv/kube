@@ -44,9 +44,9 @@ here. Douglas manages the `basic-auth` secret directly.
   scale to zero when not needed.
 - **Single replica.** Browser contexts are in-memory per-process. Multiple
   replicas would produce session routing failures.
-- **Root container.** Chromium with `--no-sandbox` requires root in
-  unprivileged container environments. `allowPrivilegeEscalation: false`
-  and dropped capabilities mitigate the risk.
+- **UID 1000.** Container runs as UID 1000 with `--no-sandbox`. If the image's
+  `/app/` or Chromium binaries are not world-readable the pod will fail to start
+  with a permissions error — fall back to `runAsNonRoot: false` if needed.
 
 ## Endpoints
 
