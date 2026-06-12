@@ -63,6 +63,7 @@ spec:
               cpu: 50m
               memory: 200Mi
             limits:
+              cpu: "2"
               memory: 2Gi
       volumes:
         # Chromium writes to /dev/shm; default 64Mi tmpfs causes crashes
