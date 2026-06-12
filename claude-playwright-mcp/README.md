@@ -34,8 +34,14 @@ here. Douglas manages the `basic-auth` secret directly.
 ## Known limitations
 
 - **No session TTL.** Browser contexts are not cleaned up between MCP calls.
-  Leaked contexts accumulate until the pod restarts. Acceptable for initial
-  use; KEDA/on-demand session lifecycle is the planned follow-up.
+  Leaked contexts accumulate until the pod restarts. Symptom: monotonic memory
+  growth up to the 2Gi limit, then OOMKill. Acceptable for initial use;
+  KEDA/on-demand session lifecycle is the planned follow-up.
+- **Standing Hetzner cost.** `replicas: 1` plus the `instance.hetzner.cloud/provided-by: cloud`
+  nodeSelector means the autoscaler cannot scale Hetzner workers to zero while
+  this Deployment exists. If Hetzner workers are otherwise transient (spun up
+  only for batch workloads), this pod keeps a VM alive permanently. Remove or
+  scale to zero when not needed.
 - **Single replica.** Browser contexts are in-memory per-process. Multiple
   replicas would produce session routing failures.
 - **Root container.** Chromium with `--no-sandbox` requires root in

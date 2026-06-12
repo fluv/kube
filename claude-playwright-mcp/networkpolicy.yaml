@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: playwright-mcp
+  namespace: claude-playwright-mcp
+spec:
+  podSelector:
+    matchLabels:
+      app: playwright-mcp
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow inbound MCP traffic from the nginx-ingress controller only.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - port: 8931
+          protocol: TCP
+  egress:
+    # Allow DNS resolution via kube-dns.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow HTTP/HTTPS to public internet only.
+    # Blocks RFC1918, link-local (Hetzner metadata at 169.254.169.254),
+    # and Tailscale CGNAT to prevent browser-borne SSRF into the cluster
+    # network, home LAN (192.168.1.0/24 routable from any node via
+    # Tailscale), and the Hetzner metadata endpoint.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8      # RFC1918 — covers k3s pod/service CIDRs
+              - 172.16.0.0/12   # RFC1918
+              - 192.168.0.0/16  # RFC1918 — covers home LAN
+              - 169.254.0.0/16  # link-local — Hetzner instance metadata
+              - 100.64.0.0/10   # Tailscale CGNAT
+      ports:
+        - port: 80
+          protocol: TCP
+        - port: 443
+          protocol: TCP
