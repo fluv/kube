@@ -52,6 +52,9 @@ here. Douglas manages the `basic-auth` secret directly.
 
 - `https://playwright.mcp.k3s.fluv.net/mcp` — MCP streamable HTTP endpoint
 
+The egress NetworkPolicy restricts browser requests to ports 80 and 443 only.
+Sites served on non-standard ports (e.g. 8080) will be unreachable from this pod.
+
 ## Lock-out recovery
 
 If the `basic-auth` Secret is missing or misconfigured, temporarily remove
