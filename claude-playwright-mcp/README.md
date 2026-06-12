@@ -25,7 +25,7 @@ rm /tmp/claude/auth
 ```
 
 After creation, add the connector to claude.ai using:
-`https://douglas:PASSWORD@playwright.mcp.k3s.fluv.net/mcp`
+`https://douglas:PASSWORD@playwright.mcp.k3s.fluv.net/sse`
 
 No `claude-namespace-admin` RoleBinding exists for this namespace — there are
 no rotating credentials to manage, so Claude doesn't need secret write access
@@ -50,7 +50,7 @@ here. Douglas manages the `basic-auth` secret directly.
 
 ## Endpoints
 
-- `https://playwright.mcp.k3s.fluv.net/mcp` — MCP streamable HTTP endpoint
+- `https://playwright.mcp.k3s.fluv.net/sse` — MCP SSE endpoint (`runHeartbeat=false`)
 
 The egress NetworkPolicy restricts browser requests to ports 80 and 443 only.
 Sites served on non-standard ports (e.g. 8080) will be unreachable from this pod.
