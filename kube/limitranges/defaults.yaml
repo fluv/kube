@@ -123,6 +123,22 @@ apiVersion: v1
 kind: LimitRange
 metadata:
   name: default-limits
+  namespace: claude-playwright-mcp
+spec:
+  limits:
+    - type: Container
+      # Higher defaults for Chromium — matches the explicit deployment limits.
+      default:
+        cpu: "2"
+        memory: 2Gi
+      defaultRequest:
+        cpu: 50m
+        memory: 200Mi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
   namespace: claude-printer-mcp
 spec:
   limits:

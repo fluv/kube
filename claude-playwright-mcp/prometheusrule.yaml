@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: playwright-mcp
+  namespace: claude-playwright-mcp
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: playwright-mcp-ingress
+      rules:
+        # If the basic-auth secret goes missing or is misconfigured the
+        # nginx-ingress controller returns 503 for every request without
+        # surfacing the failure anywhere obvious. Same pattern as printer-mcp.
+        - alert: PlaywrightMcpIngress5xx
+          expr: |
+            sum by (ingress) (
+              rate(nginx_ingress_controller_requests{
+                exported_namespace="claude-playwright-mcp",
+                status=~"5.."
+              }[5m])
+            ) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            component: playwright-mcp
+          annotations:
+            summary: "playwright-mcp ingress serving 5xx ({{ $value | humanize }} req/s)"
+            description: "ingress-nginx is returning 5xx from {{ $labels.ingress }}. Most likely cause: basic-auth secret missing or malformed in claude-playwright-mcp namespace."

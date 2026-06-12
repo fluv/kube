@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playwright-mcp
+  namespace: claude-playwright-mcp
+spec:
+  # Single replica: browser contexts are in-memory per-process.
+  # Multiple replicas would produce session routing failures.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: playwright-mcp
+  template:
+    metadata:
+      labels:
+        app: playwright-mcp
+    spec:
+      # Keep off saraneth (4GB edge node running ingress + PostgreSQL).
+      # Chromium bursts hard; Hetzner workers absorb that better.
+      nodeSelector:
+        instance.hetzner.cloud/provided-by: cloud
+      containers:
+        - name: playwright-mcp
+          image: mcr.microsoft.com/playwright/mcp:v0.0.76
+          command:
+            - node
+            - /app/cli.js
+            - --headless
+            - --browser
+            - chromium
+            - --no-sandbox
+            - --port
+            - "8931"
+            - --host
+            - 0.0.0.0
+          ports:
+            - name: http
+              containerPort: 8931
+          # No HTTP health endpoint in the image; tcpSocket confirms the
+          # process is up and listening before traffic is admitted.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 50m
+              memory: 200Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        # Chromium writes to /dev/shm; default 64Mi tmpfs causes crashes
+        # on pages with complex rendering. 512Mi is comfortable headroom.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
