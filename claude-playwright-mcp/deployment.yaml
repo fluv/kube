@@ -21,7 +21,7 @@ spec:
         instance.hetzner.cloud/provided-by: cloud
       containers:
         - name: playwright-mcp
-          image: mcr.microsoft.com/playwright/mcp
+          image: mcr.microsoft.com/playwright/mcp:v0.0.76
           command:
             - node
             - /app/cli.js
@@ -48,6 +48,13 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 30
+          securityContext:
+            # Chromium with --no-sandbox runs as root; explicit here so a
+            # future image change that drops root is visible in the diff.
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: dshm
               mountPath: /dev/shm
