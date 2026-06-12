@@ -8,7 +8,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-type: basic
     nginx.ingress.kubernetes.io/auth-secret: basic-auth
     nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
-    # Streamable HTTP MCP — same SSE/chunked pattern as other MCP deployments.
+    # SSE transport — runHeartbeat=false avoids server.close() between calls.
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
@@ -18,7 +18,7 @@ spec:
     - host: playwright.mcp.k3s.fluv.net
       http:
         paths:
-          - path: /mcp
+          - path: /sse
             pathType: Prefix
             backend:
               service:
