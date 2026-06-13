@@ -8,8 +8,11 @@ secret (data.ts-auth-key, data.k3s-token), substitutes them into the template,
 and writes the resulting cluster-config JSON to data.cluster-config of the
 same secret.
 
-Per-pool labels include kubernetes.io/os=linux so the autoscaler's template
-scheduling check passes for pods that nodeSelect on it (fluv/kube#258).
+Per-pool labels are used by the autoscaler for scheduling simulation — predicting
+which pods fit a node before it exists. They include kubernetes.io/os=linux
+(fluv/kube#258) and the hcloud-specific labels that would be applied via
+--node-label in cloud-init. The simulation labels must match the cloud-init labels
+or the autoscaler may incorrectly predict that a pod can or cannot schedule.
 
 Never prints secret values. Usage:
     python3 update-cluster-config-secret.py
@@ -37,9 +40,14 @@ POOLS = [
     {"name": "hetz-32gb-hel1"},
 ]
 
-LABELS = {
+# Base labels for autoscaler scheduling simulation. The simulation labels must
+# match what cloud-init actually applies via --node-label.
+#   provided-by: set by hcloud CCM; CCM address reconciliation fails with Tailscale
+#     IP (#450), so applied at join instead.
+#   csi.hetzner.cloud/location: published by the CSI node driver as CSI topology,
+#     not by CCM. Applied as a node label at join so simulation parity is preserved.
+BASE_LABELS = {
     "kubernetes.io/os": "linux",
-    # Required by hcloud-csi nodeSelector; CCM is not deployed so we set it here.
     "instance.hetzner.cloud/provided-by": "cloud",
 }
 
@@ -72,19 +80,18 @@ def main():
     ts_key, k3s_token = get_secret_values()
 
     template = TEMPLATE.read_text()
-    cloud_init = template.replace("__TAILSCALE_AUTH_KEY__", ts_key) \
-                         .replace("__K3S_TOKEN__", k3s_token)
+    base_cloud_init = template.replace("__TAILSCALE_AUTH_KEY__", ts_key) \
+                              .replace("__K3S_TOKEN__", k3s_token)
+
+    def pool_config(pool):
+        location = pool["name"].rsplit("-", 1)[-1]
+        cloud_init = base_cloud_init.replace("__LOCATION__", location)
+        labels = {**BASE_LABELS, "csi.hetzner.cloud/location": location}
+        return {"cloudInit": cloud_init, "labels": labels, "networks": [NETWORK_ID]}
 
     config = {
         "imagesForArch": {"amd64": IMAGE},
-        "nodeConfigs": {
-            pool["name"]: {
-                "cloudInit": cloud_init,
-                "labels": LABELS,
-                "networks": [NETWORK_ID],
-            }
-            for pool in POOLS
-        },
+        "nodeConfigs": {pool["name"]: pool_config(pool) for pool in POOLS},
     }
     config_json = json.dumps(config, indent=2)
 
