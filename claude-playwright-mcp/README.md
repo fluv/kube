@@ -33,10 +33,13 @@ here. Douglas manages the `basic-auth` secret directly.
 
 ## Known limitations
 
-- **No session TTL.** Browser contexts are not cleaned up between MCP calls.
-  Leaked contexts accumulate until the pod restarts. Symptom: monotonic memory
-  growth up to the 2Gi limit, then OOMKill. Acceptable for initial use;
-  KEDA/on-demand session lifecycle is the planned follow-up.
+- **Shared browser context.** `--shared-browser-context` means all tool calls
+  share one browser context — navigation state, cookies, and localStorage
+  accumulate across calls. This is intentional: it preserves navigation state
+  between tool calls (e.g. `browser_navigate` followed by `browser_snapshot`).
+  Single-user deployment so cross-session isolation is not a concern. If memory
+  growth from accumulated state becomes an issue, a session TTL or KEDA lifecycle
+  is the follow-up path.
 - **Standing Hetzner cost.** `replicas: 1` plus the `instance.hetzner.cloud/provided-by: cloud`
   nodeSelector means the autoscaler cannot scale Hetzner workers to zero while
   this Deployment exists. If Hetzner workers are otherwise transient (spun up
