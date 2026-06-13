@@ -7,6 +7,24 @@ metadata:
     release: prometheus
 spec:
   groups:
+    - name: playwright-mcp-memory
+      rules:
+        # With --shared-browser-context, browser heap accumulates across calls.
+        # Alert at 80% of the 2Gi limit to give time to investigate before OOMKill.
+        - alert: PlaywrightMcpMemoryHigh
+          expr: |
+            container_memory_working_set_bytes{
+              namespace="claude-playwright-mcp",
+              container="playwright-mcp"
+            } / 2e9 > 0.8
+          for: 10m
+          labels:
+            severity: warning
+            component: playwright-mcp
+          annotations:
+            summary: "playwright-mcp memory > 1.6Gi (80% of 2Gi limit)"
+            description: "Accumulated browser state may be growing with --shared-browser-context. If memory stays high, consider restarting the pod to release browser heap."
+
     - name: playwright-mcp-ingress
       rules:
         # If the basic-auth secret goes missing or is misconfigured the
