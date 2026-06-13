@@ -6,6 +6,8 @@
 # Substitution variables:
 #   __TAILSCALE_AUTH_KEY__  — ephemeral reusable auth key tagged tag:k3s
 #   __K3S_TOKEN__           — contents of /var/lib/rancher/k3s/server/node-token
+#   __LOCATION__            — Hetzner location (hel1, fsn1, nbg1); substituted per-pool by
+#                             update-cluster-config-secret.py from the pool name suffix
 #
 # k3s server endpoint: saraneth via Tailscale MagicDNS (resolves to 100.95.187.35)
 # Tailnet: gentoo-mine.ts.net
@@ -100,6 +102,11 @@ runcmd:
   # --flannel-iface: route pod overlay traffic over the private network for
   #   hcloud-to-hcloud efficiency; Pi/saraneth reach the VTEP via Tailscale subnet routes.
   # --kubelet-arg=provider-id: tells hcloud CCM which Hetzner server this is.
+  # --node-label: hcloud-csi nodeSelector and PV node affinity both require these labels.
+  #   hcloud CCM would normally apply them via address reconciliation, but reconciliation
+  #   fails when --node-ip is set to a Tailscale IP (fluv/kube#450). Applying them at
+  #   join time makes labelling independent of CCM state. __LOCATION__ is substituted
+  #   per-pool by update-cluster-config-secret.py (e.g. hetz-8gb-hel1 -> hel1).
   - >
     curl -sfL https://get.k3s.io |
     K3S_URL=https://saraneth.gentoo-mine.ts.net:6443
@@ -109,3 +116,5 @@ runcmd:
     --node-ip=$(tailscale ip -4)
     --node-external-ip=$(curl -sf http://169.254.169.254/hetzner/v1/metadata/public-ipv4)
     --flannel-iface=enp7s0
+    --node-label=instance.hetzner.cloud/provided-by=cloud
+    --node-label=csi.hetzner.cloud/location=__LOCATION__
