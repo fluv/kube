@@ -102,11 +102,15 @@ runcmd:
   # --flannel-iface: route pod overlay traffic over the private network for
   #   hcloud-to-hcloud efficiency; Pi/saraneth reach the VTEP via Tailscale subnet routes.
   # --kubelet-arg=provider-id: tells hcloud CCM which Hetzner server this is.
-  # --node-label: hcloud-csi nodeSelector and PV node affinity both require these labels.
-  #   hcloud CCM would normally apply them via address reconciliation, but reconciliation
-  #   fails when --node-ip is set to a Tailscale IP (fluv/kube#450). Applying them at
-  #   join time makes labelling independent of CCM state. __LOCATION__ is substituted
-  #   per-pool by update-cluster-config-secret.py (e.g. hetz-8gb-hel1 -> hel1).
+  # --node-label: two labels applied at join:
+  #   instance.hetzner.cloud/provided-by=cloud — hcloud-csi DaemonSet nodeSelector and
+  #     Prometheus nodeAffinity gate on this label. hcloud CCM sets it during address
+  #     reconciliation, but reconciliation fails when --node-ip is a Tailscale IP (#450).
+  #   csi.hetzner.cloud/location=__LOCATION__ — published by the CSI node driver as CSI
+  #     topology (not by CCM). Applied as a node label here so autoscaler scheduling
+  #     simulation (HCLOUD_CLUSTER_CONFIG labels) stays consistent with what cloud-init
+  #     actually applies. __LOCATION__ is substituted per-pool by
+  #     update-cluster-config-secret.py (e.g. hetz-8gb-hel1 → hel1).
   - >
     curl -sfL https://get.k3s.io |
     K3S_URL=https://saraneth.gentoo-mine.ts.net:6443

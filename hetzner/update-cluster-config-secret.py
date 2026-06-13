@@ -40,11 +40,12 @@ POOLS = [
     {"name": "hetz-32gb-hel1"},
 ]
 
-# Base labels for autoscaler scheduling simulation. hcloud CCM normally applies
-# instance.hetzner.cloud/provided-by and csi.hetzner.cloud/location, but its
-# address reconciliation fails when --node-ip is a Tailscale IP (fluv/kube#450),
-# so those labels are applied via --node-label in cloud-init instead. The
-# simulation labels here must match what cloud-init actually applies.
+# Base labels for autoscaler scheduling simulation. The simulation labels must
+# match what cloud-init actually applies via --node-label.
+#   provided-by: set by hcloud CCM; CCM address reconciliation fails with Tailscale
+#     IP (#450), so applied at join instead.
+#   csi.hetzner.cloud/location: published by the CSI node driver as CSI topology,
+#     not by CCM. Applied as a node label at join so simulation parity is preserved.
 BASE_LABELS = {
     "kubernetes.io/os": "linux",
     "instance.hetzner.cloud/provided-by": "cloud",
