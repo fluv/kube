@@ -25,7 +25,7 @@ rm /tmp/claude/auth
 ```
 
 After creation, add the connector to claude.ai using:
-`https://douglas:PASSWORD@playwright.mcp.k3s.fluv.net/sse`
+`https://douglas:PASSWORD@playwright.mcp.k3s.fluv.net/mcp`
 
 No `claude-namespace-admin` RoleBinding exists for this namespace — there are
 no rotating credentials to manage, so Claude doesn't need secret write access
@@ -33,13 +33,16 @@ here. Douglas manages the `basic-auth` secret directly.
 
 ## Known limitations
 
-- **Shared browser context.** `--shared-browser-context` means all tool calls
-  share one browser context — navigation state, cookies, and localStorage
-  accumulate across calls. This is intentional: it preserves navigation state
-  between tool calls (e.g. `browser_navigate` followed by `browser_snapshot`).
-  Single-user deployment so cross-session isolation is not a concern. If memory
-  growth from accumulated state becomes an issue, a session TTL or KEDA lifecycle
-  is the follow-up path.
+- **Streamable HTTP transport.** claude.ai opens a new SSE connection per tool
+  call, so SSE transport creates a fresh browser page for every tool call —
+  `browser_navigate` succeeds, `browser_snapshot` sees `about:blank`. Streamable
+  HTTP transport assigns a `Mcp-Session-Id` at `initialize` time and all subsequent
+  tool calls in that conversation reuse the same session → same browser page.
+  Navigation state, cookies, and localStorage persist across tool calls. The
+  upstream image hardcodes `runHeartbeat: true` for Streamable HTTP, which kills
+  sessions after ~8 s when no persistent SSE GET stream is held (claude.ai does
+  not hold one). A startup `sed` patches the compiled JS to disable the heartbeat
+  before `exec`-ing node.
 - **Standing Hetzner cost.** `replicas: 1` plus the `instance.hetzner.cloud/provided-by: cloud`
   nodeSelector means the autoscaler cannot scale Hetzner workers to zero while
   this Deployment exists. If Hetzner workers are otherwise transient (spun up
@@ -53,7 +56,7 @@ here. Douglas manages the `basic-auth` secret directly.
 
 ## Endpoints
 
-- `https://playwright.mcp.k3s.fluv.net/sse` — MCP SSE endpoint (`runHeartbeat=false`)
+- `https://playwright.mcp.k3s.fluv.net/mcp` — MCP Streamable HTTP endpoint (heartbeat disabled at startup)
 
 The egress NetworkPolicy restricts browser requests to ports 80 and 443 only.
 Sites served on non-standard ports (e.g. 8080) will be unreachable from this pod.
