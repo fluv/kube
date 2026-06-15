@@ -33,7 +33,7 @@ spec:
         fsGroup: 65532
       containers:
         - name: notebook
-          image: ghcr.io/fluv/notebook:0.6.0@sha256:21599b4e57ec57eb073b081d830a2b74d70cabfb6f96c675ccc454f05f86fdee
+          image: ghcr.io/fluv/notebook:0.6.0@sha256:74fa1341177ea5ac9b6d979185e2db801a3aea7590fb3df8d8bf881b6519e16b
           imagePullPolicy: IfNotPresent
           env:
             - name: NOTEBOOK_SENSITIVE_DEFAULT
