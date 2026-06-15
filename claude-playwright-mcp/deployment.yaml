@@ -28,7 +28,7 @@ spec:
             - |
               grep -q 'connect(serverBackendFactory, transport, true)' /app/node_modules/playwright-core/lib/coreBundle.js || { echo "heartbeat patch target not found — update sed pattern for new image version"; exit 1; }
               sed -i 's/connect(serverBackendFactory, transport, true)/connect(serverBackendFactory, transport, false)/' /app/node_modules/playwright-core/lib/coreBundle.js
-              exec node /app/cli.js --headless --browser chromium --no-sandbox --port 8931 --host 0.0.0.0 --allowed-hosts '*'
+              exec node /app/cli.js --headless --browser chromium --no-sandbox --port 8931 --host 0.0.0.0 --allowed-hosts '*' --isolated
           ports:
             - name: http
               containerPort: 8931

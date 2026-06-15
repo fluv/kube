@@ -50,6 +50,10 @@ here. Douglas manages the `basic-auth` secret directly.
   scale to zero when not needed.
 - **Single replica.** Browser contexts are in-memory per-process. Multiple
   replicas would produce session routing failures.
+- **Isolated browser contexts.** `--isolated` is set so each MCP session gets its
+  own browser data directory. Without it, a session that exits without cleanup leaves
+  a lock file that blocks the next session with "Browser is already in use". Tradeoff:
+  cookies and localStorage do not persist between conversations.
 - **UID 1000.** Container runs as UID 1000 with `--no-sandbox`. If the image's
   `/app/` or Chromium binaries are not world-readable the pod will fail to start
   with a permissions error — fall back to `runAsNonRoot: false` if needed.
