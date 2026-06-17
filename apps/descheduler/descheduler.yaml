@@ -17,17 +17,24 @@ spec:
         schedule: "*/5 * * * *"
         deschedulerPolicy:
           profiles:
-            - name: default
-              pluginConfig:
-                - name: DefaultEvictor
-                - name: RemovePodsViolatingNodeAffinity
-                  args:
-                    nodeAffinityType:
-                      - preferredDuringSchedulingIgnoredDuringExecution
-              plugins:
-                deschedule:
-                  enabled:
-                    - RemovePodsViolatingNodeAffinity
+          - name: consolidation
+            pluginConfig:
+              - name: DefaultEvictor
+                args:
+                  nodeFit: true
+              - name: LowNodeUtilization
+                args:
+                  thresholds:
+                    memory: 20
+                  targetThresholds:
+                    memory: 70
+            plugins:
+              balance:
+                enabled:
+                  - LowNodeUtilization
+              evictor:
+                enabled:
+                  - DefaultEvictor
   syncPolicy:
     automated:
       prune: true
