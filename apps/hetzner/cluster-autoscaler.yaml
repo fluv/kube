@@ -35,7 +35,7 @@ spec:
             instanceType: cx33 # 7.79 EUR/mo
             region: hel1
           - name: hetz-16gb-hel1
-            minSize: 0
+            minSize: 1
             maxSize: 1
             instanceType: cx43 # 14.39 EUR/mo
             region: hel1
@@ -74,6 +74,8 @@ spec:
             - hetz-4gb-hel1
           40: # primary
             - hetz-8gb-hel1
+          50: # temporary
+            - hetz-16gb-hel1
         hostNetwork: true
         tolerations:
           - key: node-role.kubernetes.io/control-plane
