@@ -22,7 +22,7 @@ spec:
           - name: hetz-4gb-nbg1 # included in case hel1 is oversubscribed
             minSize: 0
             maxSize: 2
-            instanceType: cx23 # 4.79 EUR/mo
+            instanceType: cx23 # 5.99 EUR/mo
             region: nbg1
           - name: hetz-4gb-hel1
             minSize: 0
@@ -32,17 +32,17 @@ spec:
           - name: hetz-8gb-hel1
             minSize: 1
             maxSize: 2
-            instanceType: cx33 # 7.79 EUR/mo
+            instanceType: cx33 # 8.99 EUR/mo
             region: hel1
           - name: hetz-16gb-hel1
             minSize: 1
             maxSize: 1
-            instanceType: cx43 # 14.39 EUR/mo
+            instanceType: cx43 # 16.49 EUR/mo
             region: hel1
           - name: hetz-32gb-hel1
             minSize: 0
             maxSize: 0
-            instanceType: cx53 # 26.99 EUR/mo
+            instanceType: cx53 # 29.99 EUR/mo
             region: hel1
         extraEnv:
           HCLOUD_PUBLIC_IPV4: "true" # k3s install script needs GitHub which is IPv4 only
@@ -66,7 +66,7 @@ spec:
         # Prefer (arbitrarily selected) Helsinki over other regions; prefer CX33 over CX23 (better value)
         expanderPriorities: # higher fulfilled first
           10: # use only if large pods need it
-            # - hetz-16gb-hel1
+           - hetz-16gb-hel1
             - hetz-32gb-hel1
           20: # fallback
             - hetz-4gb-nbg1
@@ -74,8 +74,6 @@ spec:
             - hetz-4gb-hel1
           40: # primary
             - hetz-8gb-hel1
-          50: # temporary
-            - hetz-16gb-hel1
         hostNetwork: true
         tolerations:
           - key: node-role.kubernetes.io/control-plane
