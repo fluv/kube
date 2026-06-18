@@ -35,7 +35,7 @@ spec:
             instanceType: cx33 # 8.99 EUR/mo
             region: hel1
           - name: hetz-16gb-hel1
-            minSize: 1
+            minSize: 0
             maxSize: 1
             instanceType: cx43 # 16.49 EUR/mo
             region: hel1
