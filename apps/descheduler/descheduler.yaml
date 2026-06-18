@@ -32,7 +32,7 @@ spec:
                   - HighNodeUtilization
               evictor:
                 enabled:
-          - DefaultEvictor
+                  - DefaultEvictor
   syncPolicy:
     automated:
       prune: true
