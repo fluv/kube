@@ -296,7 +296,7 @@ spec:
   limits:
     - type: Container
       default:
-        cpu: 500m
+        # CPU omitted (instance-manager always asks for 12%)
         memory: 1Gi
       defaultRequest:
         cpu: 50m
