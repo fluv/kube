@@ -9,7 +9,7 @@ To bootstrap anew:
 
 ## Cluster overview
 
-I have two Kubernetes nodes at the moment.
+I have two stable Kubernetes nodes at the moment.
 One of them is on my [**Bitfolk**](https://bitfolk.com) VPS, which is your standard
 Debian server running in a datacentre somewhere. Its hostname is `saraneth`.
 
@@ -28,15 +28,11 @@ Ingress-nginx is pinned to `saraneth` via a nodeSelector.
 
 As the VPS runs non-Kubernetes services alongside k3s, kubelet resource
 reservations are configured manually on `saraneth` to prevent Kubernetes from
-consuming the whole host. These should be placed in
-`/etc/rancher/k3s/config.yaml.d/kubelet-reservations.yaml`:
-
-```yaml
-kubelet-arg:
-  - "system-reserved=cpu=500m,memory=1250Mi"
-  - "kube-reserved=cpu=300m,memory=700Mi"
-  - "eviction-hard=memory.available<300Mi,nodefs.available<10%"
-```
+consuming the whole host. This means there isn't actually much compute available
+for Kubernetes workloads, so we also use a **cluster autoscaler** which spins up
+new nodes as required in **Hetzner Cloud**. A descheduler is configured to run
+occasionally and evict pods from underutilised nodes, cramming them into as few
+nodes as possible, to keep costs down.
 
 ## Projects
 
@@ -163,10 +159,6 @@ As such:
   `cluster-low` (value 100, global default) for everything else. When the VPS
   runs low on memory, low-priority pods are preempted to make room for critical
   ones
-* the [**Descheduler**](https://sigs.k8s.io/descheduler) runs every five minutes;
-  most workloads carry no node affinity, so placement is driven purely by
-  available resources — the Pi's larger allocatable pool (~7 GB vs saraneth's
-  ~1.7 GB) means the scheduler fills it first when it returns after an outage
 
 
 ## Costs
@@ -174,5 +166,7 @@ As such:
 The Raspberry Pi cost me £90 (2023), and its 256GB MicroSD card cost £30 (2025).
 Google Cloud storage, used for Mastodon,  costs me about £1 a month.
 A base plan on my VPS costs £65 a year, and I pay extra for some additional RAM.
+
+Hetzner nodes are billed hourly. At theoretical maximum usage that's around €45/month.
 
 I&rsquo;m using the personal Tailscale plan, which is free.
