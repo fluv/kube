@@ -22,19 +22,17 @@ spec:
               - name: DefaultEvictor
                 args:
                   nodeFit: true
-              - name: LowNodeUtilization
+              - name: HighNodeUtilization
                 args:
                   thresholds:
                     memory: 20
-                  targetThresholds:
-                    memory: 70
             plugins:
               balance:
                 enabled:
-                  - LowNodeUtilization
+                  - HighNodeUtilization
               evictor:
                 enabled:
-                  - DefaultEvictor
+          - DefaultEvictor
   syncPolicy:
     automated:
       prune: true
