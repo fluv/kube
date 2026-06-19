@@ -6,6 +6,7 @@ resources:
   - rbac.yaml
   - postsync-job.yaml
   - storage-class.yaml
+  - prometheusrule.yaml
 
 # The script and cloud-init template are mounted into the PostSync hook as a
 # ConfigMap rather than cloned at runtime. configMapGenerator appends a hash of

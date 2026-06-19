@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hcloud-init-hook
+  namespace: kube-system
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: hcloud-init-hook
+      rules:
+        - alert: HcloudInitDataUpdateFailed
+          expr: |
+            kube_job_status_failed{
+              namespace="kube-system",
+              job_name="hcloud-init-data-update"
+            } > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: hcloud-init-hook
+          annotations:
+            summary: "hcloud-init-data-update PostSync Job failed"
+            description: "The hcloud-init-data-update Job has failed. The autoscaler cluster-config secret may be stale — new Hetzner nodes will be provisioned with the old template. Check the Job logs in kube-system."
