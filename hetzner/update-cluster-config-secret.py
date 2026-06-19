@@ -33,11 +33,11 @@ IMAGE = "ubuntu-24.04"
 NETWORK_ID = 12239723
 
 POOLS = [
-    {"name": "hetz-4gb-nbg1"},
-    {"name": "hetz-4gb-hel1"},
-    {"name": "hetz-8gb-hel1"},
-    {"name": "hetz-16gb-hel1"},
-    {"name": "hetz-32gb-hel1"},
+    {"name": "hetz-4gb-nbg1",  "location": "nbg1"},
+    {"name": "hetz-4gb-hel1",  "location": "hel1"},
+    {"name": "hetz-8gb-hel1",  "location": "hel1"},
+    {"name": "hetz-16gb-hel1", "location": "hel1"},
+    {"name": "hetz-32gb-hel1", "location": "hel1"},
 ]
 
 # Base labels for autoscaler scheduling simulation. The simulation labels must
@@ -84,7 +84,7 @@ def main():
                               .replace("__K3S_TOKEN__", k3s_token)
 
     def pool_config(pool):
-        location = pool["name"].rsplit("-", 1)[-1]
+        location = pool["location"]
         cloud_init = base_cloud_init.replace("__LOCATION__", location)
         labels = {**BASE_LABELS, "csi.hetzner.cloud/location": location}
         return {"cloudInit": cloud_init, "labels": labels, "networks": [NETWORK_ID]}
