@@ -57,7 +57,7 @@ spec:
                 - |
                   set -e
                   kubectl delete pods -l app=claude-grocy -n claude-grocy --ignore-not-found
-                  kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=600s
+                  kubectl wait --for=condition=Ready pod -l app=claude-grocy -n claude-grocy --timeout=600s
               resources:
                 requests:
                   cpu: 10m
