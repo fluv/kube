@@ -32,6 +32,8 @@ IMAGE = "ubuntu-24.04"
 # flannel VxLAN from other nodes (confirmed on hetz-8gb, 2026-05-30).
 NETWORK_ID = 12239723
 
+# Each entry requires "name" (autoscaler pool key) and "location" (Hetzner region,
+# e.g. hel1/nbg1). Missing "location" raises KeyError at run time — intentional.
 POOLS = [
     {"name": "hetz-4gb-nbg1",  "location": "nbg1"},
     {"name": "hetz-4gb-hel1",  "location": "hel1"},
