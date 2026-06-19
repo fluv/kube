@@ -52,6 +52,7 @@ spec:
             requests:
               memory: 40Mi
               cpu: 10m
+        storageClasses: []
         controller:
           nodeSelector:
             instance.hetzner.cloud/provided-by: cloud

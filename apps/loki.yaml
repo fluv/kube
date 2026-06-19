@@ -7,8 +7,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
     kubernetes.io/description: |
       Grafana Loki in monolithic SingleBinary mode. PVC on the
-      `hcloud-volumes-hel1` storage class so the volume is pinned to hel1
-      where minSize>=1 nodes always exist. The PVC size (not a time-based limit) is the real
+      `hcloud-volumes` storage class. The PVC size (not a time-based limit) is the real
       retention cap — the 90-day retention
       ceiling is set high on purpose so ingest stalls rather than silently
       dropping old chunks if throughput ever spikes. PrometheusRule alerts
@@ -73,7 +72,7 @@ spec:
                         - saraneth
           persistence:
             enabled: true
-            storageClass: hcloud-volumes-hel1
+            storageClass: hcloud-volumes
             size: 10Gi
           resources:
             requests:
