@@ -18,13 +18,13 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: NotIn
-                    # pi: uses SD card (tagged 'sd', not 'durable') — excluded upstream
-                    # saraneth: Bitfolk VPS with metered WAN egress; longhorn-durable
-                    # volumes must not replicate there. Disks are tagged 'wan' manually
-                    # and must not be overwritten with 'durable' by this tagger.
-                    values: [pi.home.arpa, saraneth]
+                  # Allowlist: only run on nodes whose storage is confirmed SSD-backed.
+                  # Set at node join via --node-label in hetzner/cloud-init-template.yaml.
+                  # Existing nodes must be labelled manually before this DaemonSet will
+                  # schedule on them (see fluv/kube#249 for the kubectl label command).
+                  - key: storage.zuzak.uk/disk-type
+                    operator: In
+                    values: [ssd]
       containers:
         - name: tagger
           image: docker.io/bitnami/kubectl@sha256:08afc880eea24f36572644ccae85fb3e573a6ff1b7161135a3ae9a5eab222df2
