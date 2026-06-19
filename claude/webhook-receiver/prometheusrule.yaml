@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: webhook-receiver
+  namespace: claude
+  labels:
+    prometheus: claude
+spec:
+  groups:
+    - name: webhook-receiver-availability
+      rules:
+        - alert: ClaudeWebhookReceiverDown
+          expr: up{job="webhook-receiver", namespace="claude"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            component: webhook-receiver
+          annotations:
+            summary: "webhook-receiver scrape target is down"
+            description: "Prometheus has been unable to scrape the webhook-receiver for 5 minutes. DS reviews and PR event processing are silently dropped — check the pod status in the claude namespace."
