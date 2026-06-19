@@ -7,8 +7,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
     kubernetes.io/description: |
       Grafana Loki in monolithic SingleBinary mode. PVC on the
-      `longhorn-durable` storage class so replicas live on attached storage,
-      not the SD card. The PVC size (not a time-based limit) is the real
+      `hcloud-volumes` storage class. The PVC size (not a time-based limit) is the real
       retention cap — the 90-day retention
       ceiling is set high on purpose so ingest stalls rather than silently
       dropping old chunks if throughput ever spikes. PrometheusRule alerts
