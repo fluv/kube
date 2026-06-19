@@ -15,7 +15,7 @@ rules:
     verbs: ["get", "list", "watch", "patch", "update"]
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["get", "list", "watch", "delete"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -56,7 +56,7 @@ spec:
                 - -c
                 - |
                   set -e
-                  kubectl delete pods -l app=claude-grocy -n claude-grocy --grace-period=5 --ignore-not-found
+                  kubectl rollout restart deployment/claude-grocy -n claude-grocy
                   kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=600s
               resources:
                 requests:
