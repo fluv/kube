@@ -10,7 +10,7 @@ spec:
     - name: webhook-receiver-availability
       rules:
         - alert: ClaudeWebhookReceiverDown
-          expr: up{job="webhook-receiver", namespace="claude"} == 0
+          expr: up{job=~".*webhook-receiver.*", namespace="claude"} == 0
           for: 5m
           labels:
             severity: critical
