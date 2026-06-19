@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: grocy
+  namespace: claude-grocy
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: grocy-cronjob
+      rules:
+        - alert: ClaudeGrocyRestartFailed
+          expr: |
+            kube_job_status_failed{
+              namespace="claude-grocy",
+              job_name=~"claude-grocy-restart-.*"
+            } > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: grocy
+          annotations:
+            summary: "claude-grocy daily restart CronJob failed"
+            description: "The claude-grocy-restart CronJob has a failed Job run. The grocy MCP server may not have restarted as expected — check the pod logs and the job history in the claude-grocy namespace."
