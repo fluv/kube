@@ -45,6 +45,7 @@ and any other relevant criteria not listed.
 
 The following items are not acceptable in this cluster and should always result in -2:
 * Containers running as root
+* Anything allowing the `claude` user to run privileged workloads
 * Deployments without explicit memory and CPU requests and limits
 * Mechanisms that restrict pods from scheduling onto autoscaled nodes without justification
 * The `longhorn` StorageClass being used for workloads unsuited to a microSD card (use `longhorn-durable` instead)
