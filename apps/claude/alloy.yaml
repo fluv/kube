@@ -124,7 +124,7 @@ spec:
                   __address__ = env("NODE_IP") + ":9091",
                   job         = "claude-live",
                 }]
-                scrape_interval = "10s"
+                scrape_interval = "60s"
                 forward_to      = [prometheus.remote_write.claude.receiver]
               }
 
