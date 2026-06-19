@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hcloud-volumes-hel1
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: csi.hetzner.cloud
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: csi.hetzner.cloud/location
+        operator: In
+        values:
+          - hel1
