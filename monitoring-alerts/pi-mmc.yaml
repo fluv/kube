@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pi-mmc
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: pi-mmc
+      rules:
+        - alert: PiMmcReadErrors
+          expr: |
+            increase(node_disk_read_errors_total{device="mmcblk0"}[1h]) > 0
+          for: 10m
+          labels:
+            severity: warning
+            component: pi-mmc
+          annotations:
+            summary: "Pi microSD (mmcblk0) read errors detected"
+            description: >-
+              The Pi's microSD card (mmcblk0) reported read errors in the last hour.
+              This preceded the 2026-03 iSCSI kernel hang. Check
+              `dmesg | grep -i mmc` on the Pi for details. Consider scheduling a
+              maintenance window to run e2fsck.
