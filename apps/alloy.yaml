@@ -24,15 +24,11 @@ spec:
           type: daemonset
           priorityClassName: cluster-low
           volumes:
-            extraVolumes:
+            extra:
               - name: alloy-positions
                 hostPath:
                   path: /var/lib/alloy
                   type: DirectoryOrCreate
-          volumeMounts:
-            extraVolumeMounts:
-              - name: alloy-positions
-                mountPath: /var/lib/alloy
         alloy:
           storagePath: /var/lib/alloy
           clustering:
@@ -40,6 +36,9 @@ spec:
           mounts:
             varlog: true
             dockercontainers: true
+            extra:
+              - name: alloy-positions
+                mountPath: /var/lib/alloy
           resources:
             requests:
               cpu: 20m
