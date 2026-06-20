@@ -12,7 +12,7 @@ spec:
         - alert: NodePodNetworkUnreachable
           expr: |
             (
-              up{job=~".*alloy.*", namespace="alloy"} == 0
+              (up{job=~".*alloy.*", namespace="alloy"} == 0)
               * on(pod, namespace) group_left(node)
               kube_pod_info{namespace="alloy"}
             ) * on(node) group_left()
