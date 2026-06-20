@@ -22,3 +22,24 @@ spec:
           annotations:
             summary: "claude-grocy daily restart CronJob failed"
             description: "The claude-grocy-restart CronJob has a failed Job run. The grocy MCP server may not have restarted as expected — check the pod logs and the job history in the claude-grocy namespace."
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: grocy-mcp
+  namespace: claude-grocy
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: grocy-mcp-scrape
+      rules:
+        - alert: ClaudeGrocyMcpDown
+          expr: up{service="claude-grocy", namespace="claude-grocy"} == 0
+          for: 10m
+          labels:
+            severity: warning
+            component: grocy
+          annotations:
+            summary: "claude-grocy MCP server scrape target down"
+            description: "Prometheus has been unable to scrape /metrics from the claude-grocy MCP server for 10 minutes. Check the pod is running and the ServiceMonitor is healthy."
