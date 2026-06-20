@@ -14,10 +14,10 @@ metadata:
       Claude Code processes). Separate from the cluster-wide log-collection Alloy
       DaemonSet.
 spec:
-  project: claude
+  project: logging
   destination:
     server: https://kubernetes.default.svc
-    namespace: claude
+    namespace: alloy
   source:
     repoURL: https://github.com/grafana/alloy.git
     path: operations/helm/charts/alloy
