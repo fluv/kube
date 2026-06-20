@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: saraneth-disk
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: saraneth-disk
+      rules:
+        - alert: SaranethRootDiskWarning
+          expr: |
+            node_filesystem_avail_bytes{mountpoint="/",instance=~"saraneth.*"}
+            / node_filesystem_size_bytes{mountpoint="/",instance=~"saraneth.*"}
+            < 0.15
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Saraneth root disk under 15% free"
+            description: >-
+              Saraneth root filesystem (/) has {{ $value | humanizePercentage }} free
+              ({{ with query "node_filesystem_avail_bytes{mountpoint=\"/\",instance=~\"saraneth.*\"} / 1e9" }}{{ . | first | value | humanize }}{{ end }}GB).
+              Common culprits: Mastodon media, PostgreSQL WAL, cron mail in /var/spool.
+
+        - alert: SaranethRootDiskCritical
+          expr: |
+            node_filesystem_avail_bytes{mountpoint="/",instance=~"saraneth.*"}
+            / node_filesystem_size_bytes{mountpoint="/",instance=~"saraneth.*"}
+            < 0.10
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Saraneth root disk under 10% free"
+            description: >-
+              Saraneth root filesystem (/) has {{ $value | humanizePercentage }} free
+              ({{ with query "node_filesystem_avail_bytes{mountpoint=\"/\",instance=~\"saraneth.*\"} / 1e9" }}{{ . | first | value | humanize }}{{ end }}GB).
+              Immediate action required — kubelet may evict pods if disk pressure continues.
