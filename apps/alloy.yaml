@@ -23,7 +23,18 @@ spec:
         controller:
           type: daemonset
           priorityClassName: cluster-low
+          volumes:
+            extraVolumes:
+              - name: alloy-positions
+                hostPath:
+                  path: /var/lib/alloy
+                  type: DirectoryOrCreate
+          volumeMounts:
+            extraVolumeMounts:
+              - name: alloy-positions
+                mountPath: /var/lib/alloy
         alloy:
+          storagePath: /var/lib/alloy
           clustering:
             enabled: false
           mounts:
