@@ -65,11 +65,10 @@ spec:
               requiredDuringSchedulingIgnoredDuringExecution:
                 nodeSelectorTerms:
                   - matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: NotIn
+                    - key: csi.hetzner.cloud/location
+                      operator: In
                       values:
-                        - pi.home.arpa
-                        - saraneth
+                        - hel1
           persistence:
             enabled: true
             storageClass: hcloud-volumes
