@@ -19,7 +19,7 @@ type: kubernetes.io/service-account-token
 # Cluster-wide read access — explicit resource list, all namespaces.
 # Secrets are intentionally excluded; Claude reads secrets only where
 # a targeted RoleBinding via claude-namespace-admin grants it
-# (currently: claude, claude-grocy, claude-waitrose-mcp, claude-asda-mcp,
+# (currently: alloy, claude, claude-grocy, claude-waitrose-mcp, claude-asda-mcp,
 # claude-vestibule, claude-notebook, claude-printer-mcp, claude-router-mcp,
 # longhorn-system, cert-manager).
 apiVersion: rbac.authorization.k8s.io/v1
@@ -415,6 +415,23 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: claude-pod-restart
+subjects:
+  - kind: ServiceAccount
+    name: claude
+    namespace: claude
+---
+# Grant write access in the alloy namespace.
+# Needed for exec/debug access to alloy-otlp pod after alloy-otlp moved
+# to the alloy namespace (PR #597). See issue #613.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude
+  namespace: alloy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-namespace-admin
 subjects:
   - kind: ServiceAccount
     name: claude
