@@ -18,13 +18,13 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: NotIn
-                    # pi: uses SD card (tagged 'sd', not 'durable') — excluded upstream
-                    # saraneth: Bitfolk VPS with metered WAN egress; longhorn-durable
-                    # volumes must not replicate there. Disks are tagged 'wan' manually
-                    # and must not be overwritten with 'durable' by this tagger.
-                    values: [pi.home.arpa, saraneth]
+                  - key: storage.zuzak.uk/durable
+                    operator: In
+                    # Allowlist: only run on nodes explicitly labelled as having
+                    # durable storage. Unlabelled nodes (Pi, saraneth, future SD-backed
+                    # nodes) are excluded by default — fail-closed instead of fail-open.
+                    # Apply with: kubectl label node <name> storage.zuzak.uk/durable=true
+                    values: ["true"]
       containers:
         - name: tagger
           image: docker.io/bitnami/kubectl@sha256:08afc880eea24f36572644ccae85fb3e573a6ff1b7161135a3ae9a5eab222df2
