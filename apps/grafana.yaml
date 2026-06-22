@@ -30,6 +30,12 @@ spec:
       valuesObject:
         priorityClassName: cluster-low
         replicas: 1
+        # Plugins are reinstalled on every container start (persistence is
+        # disabled), so this list is the source of truth — the catalogue UI
+        # install button is unusable because anonymous auth can't grant the
+        # server-admin role plugin installation requires.
+        plugins:
+          - ventura-psychrometric-panel
         resources:
           requests:
             cpu: 50m
