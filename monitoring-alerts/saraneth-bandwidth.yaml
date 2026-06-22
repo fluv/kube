@@ -11,7 +11,7 @@ spec:
       rules:
         - alert: SaranethBandwidthWarning
           expr: |
-            increase(node_network_transmit_bytes_total{instance=~"saraneth.*",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[7d])
+            increase(node_network_transmit_bytes_total{instance="100.95.187.35:9100",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[7d])
             / 1e12 > 0.37
           for: 1h
           labels:
@@ -25,7 +25,7 @@ spec:
 
         - alert: SaranethBandwidthCritical
           expr: |
-            increase(node_network_transmit_bytes_total{instance=~"saraneth.*",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[7d])
+            increase(node_network_transmit_bytes_total{instance="100.95.187.35:9100",device!~"lo|tailscale0|veth.*|cali.*|tunl.*"}[7d])
             / 1e12 > 0.47
           for: 15m
           labels:
@@ -49,5 +49,5 @@ spec:
             summary: "Saraneth WAN egress rate would exceed 1 TB/mo"
             description: >-
               Saraneth's current egress rate of {{ $value | humanize }}B/s would consume
-              {{ with query "rate(node_network_transmit_bytes_total{instance=~\"saraneth.*\",device!~\"lo|tailscale0|veth.*|cali.*|tunl.*\"}[1h]) * 86400 * 30 / 1e12" }}{{ . | first | value | humanize }}{{ end }}TB
+              {{ with query "rate(node_network_transmit_bytes_total{instance=\"100.95.187.35:9100\",device!~\"lo|tailscale0|veth.*|cali.*|tunl.*\"}[1h]) * 86400 * 30 / 1e12" }}{{ . | first | value | humanize }}{{ end }}TB
               over 30 days. Investigate Longhorn replication traffic.
