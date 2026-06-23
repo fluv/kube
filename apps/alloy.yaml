@@ -23,12 +23,22 @@ spec:
         controller:
           type: daemonset
           priorityClassName: cluster-low
+          volumes:
+            extra:
+              - name: alloy-positions
+                hostPath:
+                  path: /var/lib/alloy
+                  type: DirectoryOrCreate
         alloy:
+          storagePath: /var/lib/alloy
           clustering:
             enabled: false
           mounts:
             varlog: true
             dockercontainers: true
+            extra:
+              - name: alloy-positions
+                mountPath: /var/lib/alloy
           resources:
             requests:
               cpu: 20m
