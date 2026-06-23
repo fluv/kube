@@ -148,6 +148,10 @@ spec:
       labels:
         app: weather-exporter
     spec:
+      # Service is named weather-exporter, so Kubernetes would inject a
+      # WEATHER_EXPORTER_PORT=tcp://<ip>:9096 service-link env var that
+      # collides with the script's own WEATHER_EXPORTER_PORT config.
+      enableServiceLinks: false
       containers:
         - name: weather-exporter
           image: python:3.14-slim@sha256:44dd04494ee8f3b538294360e7c4b3acb87c8268e4d0a4828a6500b1eff50061
