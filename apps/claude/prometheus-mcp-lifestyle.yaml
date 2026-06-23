@@ -12,7 +12,7 @@ spec:
     path: charts/prometheus-mcp-server
     targetRevision: HEAD
     helm:
-      values: |
+      valuesObject:
         prometheus:
           url: http://prometheus-lifestyle.lifestyle.svc.cluster.local:9090
           disableLinks: "true"
