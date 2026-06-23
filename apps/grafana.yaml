@@ -121,6 +121,17 @@ spec:
                 isDefault: false
                 jsonData:
                   timeInterval: 30s
+              - name: Tempo
+                uid: tempo
+                type: tempo
+                access: proxy
+                url: http://tempo.monitoring.svc.cluster.local:3200
+                isDefault: false
+                jsonData:
+                  tracesToLogsV2:
+                    datasourceUid: loki
+                  lokiSearch:
+                    datasourceUid: loki
         sidecar:
           datasources:
             enabled: true

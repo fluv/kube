@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    kubernetes.io/description: |
+      Grafana Tempo in single-binary mode. Receives OTLP traces from alloy-otlp
+      (port 4317 gRPC), stores locally on a Longhorn PVC pinned to the Pi, and
+      exposes the Tempo query API on port 3200 for Grafana.
+spec:
+  project: monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  source:
+    repoURL: https://github.com/fluv/kube.git
+    path: tempo
+    targetRevision: HEAD
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
