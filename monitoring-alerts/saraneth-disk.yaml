@@ -1,0 +1,41 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: saraneth-disk
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: saraneth-disk
+      rules:
+        - alert: SaranethDiskHigh
+          expr: |
+            (node_filesystem_size_bytes{instance="100.95.187.35:9100",mountpoint="/"}
+            - node_filesystem_free_bytes{instance="100.95.187.35:9100",mountpoint="/"})
+            / node_filesystem_size_bytes{instance="100.95.187.35:9100",mountpoint="/"} * 100 > 85
+          for: 15m
+          labels:
+            severity: warning
+            component: saraneth
+          annotations:
+            summary: "Saraneth root disk above 85%"
+            description: >-
+              Saraneth root filesystem (/dev/xvda1) is at {{ $value | humanize }}% capacity.
+              Bitfolk VPS storage is limited — investigate and free space before it reaches 90%.
+              Common culprits: PostgreSQL WAL, Mastodon media, apt cache, k3s images.
+        - alert: SaranethDiskCritical
+          expr: |
+            (node_filesystem_size_bytes{instance="100.95.187.35:9100",mountpoint="/"}
+            - node_filesystem_free_bytes{instance="100.95.187.35:9100",mountpoint="/"})
+            / node_filesystem_size_bytes{instance="100.95.187.35:9100",mountpoint="/"} * 100 > 90
+          for: 5m
+          labels:
+            severity: critical
+            component: saraneth
+          annotations:
+            summary: "Saraneth root disk above 90% — immediate action needed"
+            description: >-
+              Saraneth root filesystem (/dev/xvda1) is at {{ $value | humanize }}% capacity.
+              Risk of write failures. Free space immediately: clear PostgreSQL WAL, Mastodon
+              media, apt cache, or k3s images. Consider stopping k3s to reduce writes.
