@@ -127,6 +127,12 @@ data:
         print(f'weather-exporter listening on :{PORT}', flush=True)
         server.serve_forever()
 ---
+# Prerequisite: create the location Secret out-of-band before deploying.
+# Coordinates are sensitive and must not be committed.
+#
+#   kubectl create secret generic weather-exporter-location -n lifestyle \
+#     --from-literal=latitude=<lat> --from-literal=longitude=<lon>
+#
 apiVersion: apps/v1
 kind: Deployment
 metadata:
