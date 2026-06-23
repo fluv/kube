@@ -105,7 +105,9 @@ The `claude` namespace and its sibling `claude-*` namespaces host the
 infrastructure Claude (the AI assistant the cluster's owner collaborates with)
 relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
 `claude-grocy`, `claude-vestibule`, `claude-notebook`, `claude-printer-mcp`,
-`claude-playwright-mcp`), a Prometheus metrics MCP, and
+`claude-playwright-mcp`), two Prometheus metrics MCP servers
+(`prometheus-mcp` over the cluster Prometheus, `prometheus-mcp-lifestyle`
+over the `lifestyle` namespace's Prometheus), and
 `webhook-receiver`, a small aiohttp service exposed publicly at
 `webhook.k3s.fluv.net/github` that receives GitHub App webhooks and
 fans them out to in-cluster handlers (initially: a DeepSeek PR-review

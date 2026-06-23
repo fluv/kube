@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-mcp-lifestyle
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: claude
+  source:
+    repoURL: https://github.com/pab1it0/prometheus-mcp-server.git
+    path: charts/prometheus-mcp-server
+    targetRevision: HEAD
+    helm:
+      valuesObject:
+        prometheus:
+          url: http://prometheus-lifestyle.lifestyle.svc.cluster.local:9090
+          disableLinks: "true"
+        mcp:
+          transport: sse
+        livenessProbe:
+          httpGet: ~
+          tcpSocket:
+            port: http
+        readinessProbe:
+          httpGet: ~
+          tcpSocket:
+            port: http
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+  destination:
+    namespace: claude
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

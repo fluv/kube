@@ -177,3 +177,14 @@ spec:
           annotations:
             summary: "Prometheus PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full — ingest imminent"
             description: "Act now: tighten retention, grow the PVC, or scale down ingest before Prometheus halts."
+    - name: claude-mcp
+      rules:
+        - alert: ClaudePrometheusMCPLifestyleDown
+          expr: kube_deployment_status_replicas_ready{deployment="prometheus-mcp-lifestyle", namespace="claude"} == 0
+          for: 10m
+          labels:
+            severity: warning
+            component: claude-mcp
+          annotations:
+            summary: "prometheus-mcp-lifestyle has no ready replicas"
+            description: "The lifestyle Prometheus MCP server has had 0 ready replicas for 10 minutes. Claude cannot query lifestyle metrics (Awair, LG TV). Check the Deployment in the claude namespace."
