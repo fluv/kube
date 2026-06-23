@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: asda-mcp
-          image: ghcr.io/fluv/asda-mcp:main
+          image: ghcr.io/fluv/asda-mcp:main@sha256:669407d8673515fd4a05a8e088ad52e71f2498573d9d7cb2ada757be27ae8737
           imagePullPolicy: Always
           ports:
             - name: http
