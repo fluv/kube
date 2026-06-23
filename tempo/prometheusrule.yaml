@@ -10,7 +10,7 @@ spec:
     - name: tempo
       rules:
         - alert: TempoDown
-          expr: absent(up{service="tempo", namespace="monitoring"}) or up{service="tempo", namespace="monitoring"} == 0
+          expr: absent(up{job="monitoring/tempo"}) or up{job="monitoring/tempo"} == 0
           for: 10m
           labels:
             severity: warning
