@@ -16,8 +16,6 @@ spec:
         app: tempo
     spec:
       priorityClassName: cluster-low
-      nodeSelector:
-        kubernetes.io/hostname: pi.home.arpa
       containers:
         - name: tempo
           image: grafana/tempo:2.5.0
