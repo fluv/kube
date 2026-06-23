@@ -45,6 +45,9 @@ spec:
     spec:
       backoffLimit: 0
       template:
+        metadata:
+          annotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         spec:
           serviceAccountName: claude-grocy-restarter
           restartPolicy: OnFailure
