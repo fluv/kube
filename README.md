@@ -81,6 +81,13 @@ instance pinned to the Pi. Both are surfaced through a
 `grafana.gentoo-mine.ts.net` with anonymous admin access — no login, no public
 ingress; Tailscale ACLs are the access boundary.
 
+The cluster Prometheus retains 8 days of metrics on a 30 GiB Hetzner Cloud
+volume (`hcloud-volumes`). A 22 GB `retentionSize` cap sits above the ~16 GB
+that 8 days occupies, so it acts only as a backstop against filling the volume —
+time-based retention is the binding limit. A `PrometheusRetentionSizeCapBinding`
+alert fires if on-disk blocks ever ride near the cap, which would mean data is
+being evicted on size before the 8-day window is reached.
+
 A `logging-alerts` PrometheusRule covers the bits that would silently rot:
 Loki PVC headroom, stalled ingest, dropped write bytes, and per-node Alloy
 coverage. All logging components run at `cluster-low` priority so they yield
