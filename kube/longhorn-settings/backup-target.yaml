@@ -11,4 +11,9 @@ metadata:
 spec:
   backupTargetURL: "s3://longhorn.k3s.fluv.net@eu-central-003/"
   credentialSecret: "longhorn-b2-secret"
-  pollInterval: "5m0s"
+  # Poll lists the whole backup store every interval, per backup volume. At 5m
+  # with ~11 volumes this generated ~3,400 Backblaze B2 Class C (list) calls/day,
+  # exceeding the free 2,500/day cap and leaving the target Unavailable (it failed
+  # before the 02:00 backup even ran — pure idle-poll cost). 1h gives ample
+  # headroom (~300/day) while keeping externally-made backup changes in sync.
+  pollInterval: "1h0m0s"
