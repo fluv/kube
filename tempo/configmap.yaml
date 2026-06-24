@@ -7,16 +7,14 @@ data:
   tempo.yaml: |
     server:
       http_listen_port: 3200
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: "0.0.0.0:4317"
-          http:
-            endpoint: "0.0.0.0:4318"
-    compactor:
-      compaction:
-        block_retention: 240h
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: "0.0.0.0:4317"
+            http:
+              endpoint: "0.0.0.0:4318"
     storage:
       trace:
         backend: local
