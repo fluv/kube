@@ -51,16 +51,37 @@ spec:
         spec:
           serviceAccountName: claude-grocy-restarter
           restartPolicy: OnFailure
-          containers:
-            - name: kubectl
+          initContainers:
+            - name: pod-delete
               image: rancher/kubectl:v1.36.1
               command:
-                - /bin/sh
-                - -c
-                - |
-                  set -e
-                  kubectl delete pods -l app=claude-grocy -n claude-grocy --ignore-not-found
-                  kubectl wait --for=condition=Ready pod -l app=claude-grocy -n claude-grocy --timeout=600s
+                - kubectl
+                - delete
+                - pods
+                - -l
+                - app=claude-grocy
+                - -n
+                - claude-grocy
+                - --ignore-not-found
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
+          containers:
+            - name: pod-wait
+              image: rancher/kubectl:v1.36.1
+              command:
+                - kubectl
+                - wait
+                - --for=condition=Ready
+                - pod
+                - -l
+                - app=claude-grocy
+                - -n
+                - claude-grocy
+                - --timeout=600s
               resources:
                 requests:
                   cpu: 10m
