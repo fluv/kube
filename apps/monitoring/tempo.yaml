@@ -7,9 +7,9 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
     kubernetes.io/description: |
       Grafana Tempo in single-binary mode. Receives OTLP traces from alloy-otlp
-      (port 4317 gRPC), stores on a longhorn-durable PVC (no node pinning — schedules
-      on whichever node Longhorn can serve the volume), and exposes the Tempo query
-      API on port 3200 for Grafana.
+      (port 4317 gRPC), stores on a longhorn-durable PVC (Hetzner worker nodes only —
+      durable disks are on cloud nodes; pod requires a cloud node to mount the volume),
+      and exposes the Tempo query API on port 3200 for Grafana.
 spec:
   project: monitoring
   destination:
