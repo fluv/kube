@@ -20,7 +20,7 @@ spec:
       containers:
         - name: vestibule
           image: ghcr.io/fluv/vestibule:main@sha256:8dda007501a0e53560b2cae7ba2a50ebec5ad17811febc64df23997daa4f15c8
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: VESTIBULE_CONFIG
               value: /etc/vestibule/config.yaml

@@ -20,7 +20,7 @@ spec:
       containers:
         - name: waitrose-mcp
           image: ghcr.io/fluv/waitrose-mcp:main@sha256:4d12ede5a5362b937edf91d3d862c5212daf19c5e5fa75faafc5a304a25ed226
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8080
