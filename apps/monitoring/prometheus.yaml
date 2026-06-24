@@ -79,7 +79,11 @@ spec:
             replicas: 1
             priorityClassName: cluster-low
             retention: 8d
-            retentionSize: 7GB
+            # Backstop against filling the 30Gi volume; kept above the ~16GB
+            # that 8d of metrics occupies so time-based retention is the binding
+            # limit. If raised, bump the PrometheusRetentionSizeCapBinding alert
+            # threshold below in lockstep.
+            retentionSize: 22GB
             resources:
               requests:
                 cpu: 200m
@@ -115,6 +119,24 @@ spec:
                   resources:
                     requests:
                       storage: 30Gi
+        additionalPrometheusRulesMap:
+          prometheus-self-health:
+            groups:
+              - name: prometheus-retention
+                rules:
+                  - alert: PrometheusRetentionSizeCapBinding
+                    # 19e9 ≈ 86% of the 22GB retentionSize cap. 8d of metrics
+                    # occupies ~16GB, so this stays silent in normal operation;
+                    # it fires only when on-disk blocks ride near the cap, i.e.
+                    # size-based eviction is trimming data before the 8d time
+                    # retention is reached. Keep in lockstep with retentionSize.
+                    expr: prometheus_tsdb_storage_blocks_bytes{job="prometheus-kube-prometheus-prometheus"} > 19e9
+                    for: 6h
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: "Prometheus retentionSize cap is the binding retention limit"
+                      description: "On-disk blocks ({{ $value | humanize1024 }}B) are near the 22GB retentionSize cap, so metrics are being evicted on size before the 8d time retention is reached. Raise retentionSize/storage, or reduce ingested series."
         prometheusOperator:
           priorityClassName: cluster-low
           admissionWebhooks:
