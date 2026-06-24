@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meaco-exporter
+  namespace: lifestyle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meaco-exporter
+  template:
+    metadata:
+      labels:
+        app: meaco-exporter
+    spec:
+      containers:
+        - name: meaco-exporter
+          image: ghcr.io/fluv/meaco-exporter@sha256:ddf9e06d636e4d9a82d69a112146f23a045c78ba86c080620d47800facc3b17e
+          ports:
+            - name: metrics
+              containerPort: 9097
+          env:
+            - name: MEACO_IP
+              value: "192.168.1.212"
+            - name: MEACO_VERSION
+              value: "3.3"
+            - name: PORT
+              value: "9097"
+            - name: HOME
+              value: "/tmp"
+            - name: MEACO_DEVICE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: meaco-local-key
+                  key: device-id
+            - name: MEACO_LOCAL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: meaco-local-key
+                  key: local-key
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      nodeSelector:
+        kubernetes.io/hostname: pi.home.arpa
+      priorityClassName: cluster-low
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meaco-exporter
+  namespace: lifestyle
+  labels:
+    app: meaco-exporter
+spec:
+  selector:
+    app: meaco-exporter
+  ports:
+    - name: metrics
+      port: 9097
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: meaco-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  namespaceSelector:
+    matchNames:
+      - lifestyle
+  selector:
+    matchLabels:
+      app: meaco-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: meaco-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: meaco
+      rules:
+        - alert: MeacoExporterDown
+          expr: up{namespace="lifestyle", service="meaco-exporter"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Meaco exporter pod is not scraping
+            description: The meaco-exporter pod has not responded to scrapes for 5 minutes.
