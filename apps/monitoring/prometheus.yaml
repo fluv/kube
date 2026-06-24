@@ -151,6 +151,26 @@ spec:
         kubeControllerManager:
           enabled: false
         cleanPrometheusOperatorObjectNames: true
+        kube-state-metrics:
+          customResourceState:
+            enabled: true
+            config:
+              kind: CustomResourceStateMetrics
+              spec:
+                resources:
+                  - groupVersionKind:
+                      group: longhorn.io
+                      version: v1beta2
+                      kind: BackupTarget
+                    metricNamePrefix: longhorn_backup_target
+                    metrics:
+                      - name: available
+                        help: "Whether the Longhorn backup target is available (1 = available, 0 = not)"
+                        each:
+                          type: Gauge
+                          gauge:
+                            path: [status, available]
+                            nilIsZero: true
         defaultRules:
           create: true
           rules:
