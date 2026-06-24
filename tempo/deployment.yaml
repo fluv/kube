@@ -18,7 +18,7 @@ spec:
       priorityClassName: cluster-low
       containers:
         - name: tempo
-          image: grafana/tempo:2.5.0
+          image: grafana/tempo:2.10.7
           args:
             - -config.file=/etc/tempo/tempo.yaml
           ports:
