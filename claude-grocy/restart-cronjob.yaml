@@ -47,17 +47,34 @@ spec:
       template:
         spec:
           serviceAccountName: claude-grocy-restarter
-          restartPolicy: OnFailure
-          containers:
-            - name: kubectl
+          restartPolicy: Never
+          initContainers:
+            - name: rollout-restart
               image: rancher/kubectl:v1.36.1
               command:
-                - /bin/sh
-                - -c
-                - |
-                  set -e
-                  kubectl rollout restart deployment/claude-grocy -n claude-grocy
-                  kubectl rollout status deployment/claude-grocy -n claude-grocy --timeout=600s
+                - kubectl
+                - rollout
+                - restart
+                - deployment/claude-grocy
+                - -n
+                - claude-grocy
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
+          containers:
+            - name: rollout-status
+              image: rancher/kubectl:v1.36.1
+              command:
+                - kubectl
+                - rollout
+                - status
+                - deployment/claude-grocy
+                - -n
+                - claude-grocy
+                - --timeout=600s
               resources:
                 requests:
                   cpu: 10m
