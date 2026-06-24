@@ -85,6 +85,16 @@ spec:
                 }
                 output {
                   metrics = [otelcol.processor.transform.claude_descriptions.input]
+                  traces  = [otelcol.exporter.otlp.tempo.input]
+                }
+              }
+
+              otelcol.exporter.otlp "tempo" {
+                client {
+                  endpoint = "tempo.monitoring.svc.cluster.local:4317"
+                  tls {
+                    insecure = true
+                  }
                 }
               }
 

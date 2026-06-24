@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tempo
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: tempo
+      rules:
+        - alert: TempoDown
+          expr: absent(up{job="monitoring/tempo"}) or up{job="monitoring/tempo"} == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tempo trace store unreachable"
+            description: "Prometheus cannot scrape Tempo in the monitoring namespace. Traces are being dropped by the Alloy OTLP exporter."
