@@ -18,12 +18,14 @@ spec:
           image: ghcr.io/fluv/meaco-exporter@sha256:ddf9e06d636e4d9a82d69a112146f23a045c78ba86c080620d47800facc3b17e
           ports:
             - name: metrics
-              containerPort: 9096
+              containerPort: 9097
           env:
             - name: MEACO_IP
               value: "192.168.1.212"
             - name: MEACO_VERSION
               value: "3.3"
+            - name: PORT
+              value: "9097"
             - name: HOME
               value: "/tmp"
             - name: MEACO_DEVICE_ID
@@ -79,7 +81,7 @@ spec:
     app: meaco-exporter
   ports:
     - name: metrics
-      port: 9096
+      port: 9097
       targetPort: metrics
 ---
 apiVersion: monitoring.coreos.com/v1
