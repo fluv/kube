@@ -152,6 +152,11 @@ spec:
           enabled: false
         cleanPrometheusOperatorObjectNames: true
         kube-state-metrics:
+          rbac:
+            extraRules:
+              - apiGroups: [longhorn.io]
+                resources: [backuptargets]
+                verbs: [list, watch]
           customResourceState:
             enabled: true
             config:
