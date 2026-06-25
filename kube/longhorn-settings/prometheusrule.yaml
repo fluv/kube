@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-backup-target
+  namespace: longhorn-system
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: longhorn-backup-target
+      rules:
+        - alert: LonghornBackupTargetUnavailable
+          expr: |
+            longhorn_backup_target_available{name="default"} == 0
+          for: 15m
+          labels:
+            severity: warning
+            component: longhorn-backup-target
+          annotations:
+            summary: "Longhorn backup target {{ $labels.name }} is unavailable"
+            description: "The Longhorn backup target {{ $labels.name }} in {{ $labels.namespace }} has been unavailable for over 15 minutes. Backups cannot reach the remote store. Check the condition: kubectl get backuptarget {{ $labels.name }} -n longhorn-system -o jsonpath='{.status.conditions}'"
