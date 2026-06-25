@@ -139,6 +139,17 @@ my VPS for the "important" stuff. Instead of using Kubernetes persistent volumes
 we&rsquo;re using [Google Cloud Storage](https://cloud.google.com/storage) for
 user data.
 
+A [**Team Fortress 2**](https://www.teamfortress.com/) dedicated server runs in
+the `tf2` namespace, deployed by Argo CD from a separate repository,
+[`fluv/tf2-server`](https://github.com/fluv/tf2-server). It uses the community
+`cm2network/tf2` image, which downloads the ~14&nbsp;GB of game content at runtime
+via SteamCMD onto an `emptyDir` &mdash; the server holds no persistent state, so a
+rescheduled pod simply re-downloads. The Source engine is x86-only, so the
+workload is pinned to amd64 nodes with a `nodeSelector`. It is exposed on UDP
+NodePort 30015, and readiness is checked with an [A2S server
+query](https://developer.valvesoftware.com/wiki/Server_queries) against the pod
+IP rather than a TCP probe, since the game protocol is UDP-only.
+
 ## Fault tolerance
 
 I can reasonably expect my VPS to be up and running at all times.
