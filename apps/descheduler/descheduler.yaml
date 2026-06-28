@@ -25,7 +25,8 @@ spec:
               - name: HighNodeUtilization
                 args:
                   thresholds:
-                    memory: 20
+                    cpu: 10
+                    memory: 45
             plugins:
               balance:
                 enabled:
