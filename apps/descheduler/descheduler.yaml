@@ -18,6 +18,9 @@ spec:
         deschedulerPolicy:
           profiles:
           - name: consolidation
+            namespaces:
+              exclude:
+                - tf2
             pluginConfig:
               - name: DefaultEvictor
                 args:
