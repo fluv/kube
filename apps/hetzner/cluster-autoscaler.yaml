@@ -67,7 +67,6 @@ spec:
         expanderPriorities: # higher fulfilled first
           10: # use only if large pods need it
             - hetz-16gb-hel1
-            - hetz-32gb-hel1
           20: # fallback
             - hetz-4gb-nbg1
           30: # secondary
