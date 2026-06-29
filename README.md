@@ -105,6 +105,11 @@ namespace and scrapes personal (non-cluster) metrics. Current scrapers:
 - **LG TV** — power state, input, volume, and picture-settings metrics from
   the living-room LG WebOS TV via the SSAP WebSocket protocol (bscpylgtv),
   pinned to the Pi to reach the home LAN.
+- **Meaco dehumidifier** — operating state, humidity, and target from the Meaco
+  dehumidifier via Tuya protocol, scraped from the in-cluster `meaco-exporter`
+  service.
+- **Outdoor weather** — temperature, relative humidity, dew point, and absolute
+  humidity from the Open-Meteo API (no hardware required), updated every 5 minutes.
 
 ## Claude bot infrastructure
 
