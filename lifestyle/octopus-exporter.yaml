@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octopus-exporter
+  namespace: lifestyle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octopus-exporter
+  template:
+    metadata:
+      labels:
+        app: octopus-exporter
+    spec:
+      containers:
+        - name: octopus-exporter
+          image: ghcr.io/fluv/octopus-exporter@sha256:d34252504e30cad4a2fb64fcab15dcfa5a863c5493f351a5e23d04b3d10c21d1
+          ports:
+            - name: metrics
+              containerPort: 9098
+          env:
+            - name: OCTOPUS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octopus-credentials
+                  key: api-key
+            - name: OCTOPUS_ELECTRICITY_MPAN
+              valueFrom:
+                secretKeyRef:
+                  name: octopus-credentials
+                  key: electricity-mpan
+            - name: OCTOPUS_ELECTRICITY_SERIAL
+              valueFrom:
+                secretKeyRef:
+                  name: octopus-credentials
+                  key: electricity-serial
+            - name: OCTOPUS_GAS_MPRN
+              valueFrom:
+                secretKeyRef:
+                  name: octopus-credentials
+                  key: gas-mprn
+                  optional: true
+            - name: OCTOPUS_GAS_SERIAL
+              valueFrom:
+                secretKeyRef:
+                  name: octopus-credentials
+                  key: gas-serial
+                  optional: true
+            - name: SCRAPE_INTERVAL
+              value: "60"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      nodeSelector:
+        kubernetes.io/hostname: pi.home.arpa
+      priorityClassName: cluster-low
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octopus-exporter
+  namespace: lifestyle
+  labels:
+    app: octopus-exporter
+spec:
+  selector:
+    app: octopus-exporter
+  ports:
+    - name: metrics
+      port: 9098
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: octopus-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  namespaceSelector:
+    matchNames:
+      - lifestyle
+  selector:
+    matchLabels:
+      app: octopus-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 60s
+      scrapeTimeout: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: octopus-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: octopus
+      rules:
+        - alert: OctopusExporterDown
+          expr: up{namespace="lifestyle", service="octopus-exporter"} == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Octopus Energy exporter is not scraping
+            description: The octopus-exporter pod has not responded to scrapes for 10 minutes.
+        - alert: OctopusExporterScrapeError
+          expr: octopus_scrape_success == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Octopus Energy exporter scrapes are failing
+            description: The octopus-exporter has not successfully fetched consumption data for 10 minutes. Check API key and connectivity.
