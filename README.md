@@ -9,77 +9,49 @@ To bootstrap anew:
 
 ## Cluster overview
 
-I have two stable Kubernetes nodes at the moment.
-One of them is on my [**Bitfolk**](https://bitfolk.com) VPS, which is your standard
-Debian server running in a datacentre somewhere. Its hostname is `saraneth`.
+The cluster runs on three node types:
 
-The other is a [**Raspberry Pi 5** 8GB](https://www.raspberrypi.com/products/raspberry-pi-5/)
-running on my desk. Its hostname is `pi`.
+| Node | Role | Notes |
+|------|------|-------|
+| **Pi** (`pi.home.arpa`) | Control-plane + Pi-local services | Raspberry Pi 5 8GB, arm64, on my desk. Runs Longhorn local disk services, Awair and LG TV exporters (home LAN hardware), and anything explicitly pinned here. |
+| **saraneth** | Edge/ingress, non-k8s services | Bitfolk VPS, amd64, 4GB RAM. Tainted `CriticalAddonsOnly=true:PreferNoSchedule` — workloads don&rsquo;t schedule here except ingress-nginx. Hosts ingress-nginx, the k3s datastore (kine/PostgreSQL), and runs Mastodon&rsquo;s Redis and PostgreSQL outside k8s. |
+| **Hetzner workers** | Workload nodes | Ephemeral hel1 nodes provisioned by the cluster autoscaler. amd64. All general-purpose Kubernetes workloads land here unless they need LAN access or Pi-specific hardware. |
 
-They&rsquo;re connected together via a [**Tailscale**](https://tailscale.com) mesh
-virtual private network using the k3s [experimental integration](https://docs.k3s.io/networking/distributed-multicloud#integration-with-the-tailscale-vpn-provider-experimental).
+Nodes are connected via a [**Tailscale**](https://tailscale.com) mesh VPN. The k3s datastore is PostgreSQL (via kine) on `saraneth`. Tailscale routes home-LAN traffic (`192.168.1.0/24`) to all nodes so Pi-scheduled pods can reach home devices.
 
-As my VPS already had a PostgreSQL server running, we&rsquo;re using that for
-the cluster datastore. The `saraneth` node has a
-`CriticalAddonsOnly=true:PreferNoSchedule` taint to try and push as much work
-onto the Raspberry Pi as possible; the VPS&rsquo;s job is to run the control plane
-and serve the ingress traffic to the outside world.
-Ingress-nginx is pinned to `saraneth` via a nodeSelector.
+**Scheduling regime:** saraneth has a `CriticalAddonsOnly=true:PreferNoSchedule` taint — only pods tolerating it (e.g. ingress-nginx) schedule there. Services with home-LAN hardware dependencies (Awair, LG TV) are explicitly pinned to the Pi via nodeSelector. Everything else — stateless services, Loki, Grafana, Prometheus, observability, MCP servers — runs on Hetzner workers. A cluster autoscaler manages worker count; a descheduler runs periodically to consolidate pods onto fewer nodes when demand is low.
 
-As the VPS runs non-Kubernetes services alongside k3s, kubelet resource
-reservations are configured manually on `saraneth` to prevent Kubernetes from
-consuming the whole host. This means there isn't actually much compute available
-for Kubernetes workloads, so we also use a **cluster autoscaler** which spins up
-new nodes as required in **Hetzner Cloud**. A descheduler is configured to run
-occasionally and evict pods from underutilised nodes, cramming them into as few
-nodes as possible, to keep costs down.
-
-## Projects
-
-### Infrastructure
+## Infrastructure
 
 We&rsquo;re using [**k3s**](https://k3s.io/) for our Kubernetes distribution.
-I picked it as it was lightweight enough to run on my VPS alongside all the
-other non-Kubernetes things my VPS is doing, while being portable enough that
-I could feasibly run it on any hardware I might want to extend this cluster to
-in the future. It also came bundled with some integrations out the box that made
-my life easier.
 
 k3s is installed with `--disable=coredns` and `--disable=traefik`. CoreDNS is
-fully managed in this repo under `kube/coredns/` (ConfigMap, ServiceAccount,
-RBAC, DaemonSet, and Service) and deployed by Argo CD — not by the k3s addon
-system. Traefik is replaced by Ingress-Nginx (see below).
+fully managed in this repo under `kube/coredns/` and deployed by Argo CD.
+Traefik is replaced by Ingress-Nginx.
 
-We&rsquo;re running [**Argo CD**](https://argo-cd.readthedocs.io/en/stable/),
-which is used to facilitate &ldquo;declarative GitOps&rdquo;: when you push
-some YAML code to this repository, Argo CD will notice the change and will take
-action to make sure the state of the Kubernetes cluster aligns with the code
-you wrote.
+[**Argo CD**](https://argo-cd.readthedocs.io/en/stable/) drives all cluster
+state from this repository. Push to `main` and Argo CD will sync the cluster
+within seconds.
 
-We are using [**Ingress-Nginx**](https://kubernetes.github.io/ingress-nginx/) and
-[**cert-manager**](https://cert-manager.io/) to expose our HTTP/HTTPS services to
-the outside world. As we&rsquo;re using this instead of Traefik, the ingress
-controller that is bundled with k3s, we can install k3s with the
-`--disable=traefik` flag to save some overhead. I chose to use Ingress-Nginx as
-I was already familiar with it.
+For storage, [**Longhorn**](https://longhorn.io/) provides replicated persistent
+volumes. The `longhorn-durable` StorageClass targets disks tagged `durable`
+by the `longhorn-disk-tagger` DaemonSet — Hetzner worker disks are tagged at
+node join; the Pi&rsquo;s SD card and saraneth&rsquo;s disk are excluded.
 
-For volumes and storage, we&rsquo;re using [**Longhorn**](https://longhorn.io/),
-which means that any persistent storage used by our containers will, by default,
-be replicated in both nodes. As I want to run some applications that have heavy
-read/write activity, I have configured a StorageClass that removes SD cards from
-the pool where needed.
+Two custom PriorityClasses control scheduling under resource pressure:
+- `cluster-critical` (value 1,000,000): ingress, Argo CD, cert-manager, Mastodon
+- `cluster-low` (value 100, global default): observability, Claude infrastructure, lifestyle services
 
-### Observability
+## Observability
 
 Cluster metrics come from [**Prometheus**](https://prometheus.io/) via the
 [`kube-prometheus-stack`](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 chart. Logs are collected cluster-wide by [**Grafana Alloy**](https://grafana.com/docs/alloy/)
 running as a DaemonSet, which tails `/var/log/pods` on each node and ships the
 streams to a single-binary [**Grafana Loki**](https://grafana.com/oss/loki/)
-instance pinned to the Pi. Both are surfaced through a
-[**Grafana**](https://grafana.com/) instance exposed on the tailnet at
-`grafana.gentoo-mine.ts.net` with anonymous admin access — no login, no public
-ingress; Tailscale ACLs are the access boundary.
+instance. Both are surfaced through a [**Grafana**](https://grafana.com/)
+instance at `grafana.gentoo-mine.ts.net` with anonymous admin access — no
+login, no public ingress; Tailscale ACLs are the access boundary.
 
 The cluster Prometheus retains 8 days of metrics on a 30 GiB Hetzner Cloud
 volume (`hcloud-volumes`). A 22 GB `retentionSize` cap sits above the ~16 GB
@@ -90,26 +62,25 @@ being evicted on size before the 8-day window is reached.
 
 A `logging-alerts` PrometheusRule covers the bits that would silently rot:
 Loki PVC headroom, stalled ingest, dropped write bytes, and per-node Alloy
-coverage. All logging components run at `cluster-low` priority so they yield
-to end-user workloads under memory pressure on `saraneth`.
+coverage.
 
 A second, independent **Lifestyle Prometheus** instance runs in the `lifestyle`
-namespace and scrapes personal (non-cluster) metrics. Current scrapers:
+namespace and scrapes personal (non-cluster) metrics:
 
 - **Awair Element air quality** — three Awair Element monitors (bedroom, lounge,
-  study) polled via their local HTTP API, exposing CO₂, VOC, PM2.5, temperature,
-  humidity, and the Awair score. The exporter runs with `hostNetwork: true` on
-  the Pi to reach devices on the home LAN.
+  study) polled via their local HTTP API, exposing CO2, VOC, PM2.5, temperature,
+  humidity, and the Awair score. The exporter runs on the Pi to reach devices
+  on the home LAN.
 - **Grocy** — home inventory and meal-planning metrics from the `claude-grocy`
   namespace.
 - **LG TV** — power state, input, volume, and picture-settings metrics from
-  the living-room LG WebOS TV via the SSAP WebSocket protocol (bscpylgtv),
-  pinned to the Pi to reach the home LAN.
+  the living-room LG WebOS TV via the SSAP WebSocket protocol, pinned to the
+  Pi to reach the home LAN.
 
 ## Claude bot infrastructure
 
 The `claude` namespace and its sibling `claude-*` namespaces host the
-infrastructure Claude (the AI assistant the cluster's owner collaborates with)
+infrastructure Claude (the AI assistant the cluster&rsquo;s owner collaborates with)
 relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
 `claude-grocy`, `claude-vestibule`, `claude-notebook`, `claude-printer-mcp`,
 `claude-playwright-mcp`), two Prometheus metrics MCP servers
@@ -117,27 +88,23 @@ relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
 over the `lifestyle` namespace's Prometheus), and
 `webhook-receiver`, a small aiohttp service exposed publicly at
 `webhook.k3s.fluv.net/github` that receives GitHub App webhooks and
-fans them out to in-cluster handlers (initially: a DeepSeek PR-review
-trigger and a replacement for the polling-based `claude-monitor`).
+fans them out to in-cluster handlers (DeepSeek PR-review trigger and
+event log for claude-monitor).
+
+Claude&rsquo;s MCP servers have no explicit node placement — they run on Hetzner
+workers alongside other stateless workloads. The webhook receiver and telemetry
+pipeline also run on Hetzner workers.
 
 ## End-user services
 
 The `wiki-gsi` namespace runs a private [**MediaWiki**](https://www.mediawiki.org/)
-instance at `gsi.gentoo-mine.ts.net` — a personal wiki recovered from a decade-old
-installation. It consists of a MariaDB 11.4 LTS database (seeded from the original
-raw data directory) and a MediaWiki 1.43 LTS pod, both pinned to the Pi. The wiki is
-private; only authenticated users with the `user` group or above can read or edit.
+instance at `gsi.gentoo-mine.ts.net` — a personal wiki recovered from a
+decade-old installation. MariaDB 11.4 LTS + MediaWiki 1.43 LTS, both pinned to
+the Pi.
 
-We&rsquo;re running a single-user [**Mastodon**](https://joinmastodon.org/) instance on
-Kubernetes. This used to run solely on my VPS, but this caused problems: it is
-a disconcertingly resource-intensive Ruby program, and it meant my VPS often
-ran out of RAM and fell offline halfway through an upgrade.
-
-I&rsquo;m using a hybrid solution at the moment. The pods are running in Kubernetes,
-but I&rsquo;m still using the old PostgreSQL and Redis servers that were already on
-my VPS for the "important" stuff. Instead of using Kubernetes persistent volumes,
-we&rsquo;re using [Google Cloud Storage](https://cloud.google.com/storage) for
-user data.
+[**Mastodon**](https://joinmastodon.org/) runs as a single-user instance.
+The pods run on Kubernetes (Hetzner workers); PostgreSQL and Redis remain on
+`saraneth` outside k8s. User media is stored on Google Cloud Storage.
 
 A [**Team Fortress 2**](https://www.teamfortress.com/) dedicated server runs in
 the `tf2` namespace, deployed by Argo CD from a separate repository,
@@ -152,41 +119,21 @@ IP rather than a TCP probe, since the game protocol is UDP-only.
 
 ## Fault tolerance
 
-I can reasonably expect my VPS to be up and running at all times.
-It&rsquo;s in a datacentre backed by proper hardware.
-It is comparatively resource-bound, though: we&rsquo;re low on disk space and have
-contention for CPU with other Bitfolk tenants.
+The cluster tolerates Pi unavailability: saraneth runs ingress-nginx and the
+k3s datastore, so the cluster stays reachable if the Pi goes offline. Hetzner
+workers are ephemeral by design — any workload that can&rsquo;t tolerate node loss
+uses Longhorn replication.
 
-My Raspberry Pi cannot be trusted to be as reliable.
-I want to be able to unplug the Raspberry Pi to move things around in my office
-with no notice, or the MicroSD card upon which it runs to fail at any moment.
-However, the storage is cheap and all the hardware is available for my sole use.
-
-As such:
-* having the cluster data store only on the VPS is fine
-* any persistent storage on the Pi must also be stored on the VPS
-* the node on the VPS has a `CriticalAddonsOnly=true:PreferNoSchedule` taint to
-  encourage pods to be scheduled elsewhere if possible, while still allowing it
-  to step in if needed (which `…:NoSchedule` would prevent)
-* workloads with pi-specific dependencies (LAN access, local file reads) use
-  a `preferredDuringSchedulingIgnoredDuringExecution` node affinity for the
-  Pi or a hard `nodeSelector`; other workloads are unconstrained — saraneth's
-  kubelet reservations and the `cluster-low` priority class protect it
-  from over-scheduling
-* two custom PriorityClasses control which workloads actually get resources on
-  the VPS during a Pi outage: `cluster-critical` (value 1000000) for services
-  like Mastodon, Argo CD, cert-manager and ingress-nginx, and
-  `cluster-low` (value 100, global default) for everything else. When the VPS
-  runs low on memory, low-priority pods are preempted to make room for critical
-  ones
-
+The Pi is the single point for home-LAN hardware services (Awair exporter, LG
+TV exporter). These become unavailable if the Pi is offline — accepted, as
+they&rsquo;re non-critical. MCP servers run on Hetzner workers and are unaffected by
+Pi unavailability.
 
 ## Costs
 
-The Raspberry Pi cost me £90 (2023), and its 256GB MicroSD card cost £30 (2025).
-Google Cloud storage, used for Mastodon,  costs me about £1 a month.
-A base plan on my VPS costs £65 a year, and I pay extra for some additional RAM.
-
-Hetzner nodes are billed hourly. At theoretical maximum usage that's around €45/month.
-
-I&rsquo;m using the personal Tailscale plan, which is free.
+The Raspberry Pi cost £90 (2023), and its 256 GB MicroSD card cost £30 (2025).
+Google Cloud storage costs about £1/month.
+The Bitfolk VPS base plan costs £65/year plus a RAM upgrade.
+Hetzner workers are billed hourly; at theoretical maximum three-node usage,
+around €45/month.
+Tailscale personal plan is free.
