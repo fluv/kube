@@ -17,3 +17,13 @@ spec:
           annotations:
             summary: "Tempo trace store unreachable"
             description: "Prometheus cannot scrape Tempo in the monitoring namespace. Traces are being dropped by the Alloy OTLP exporter."
+        - alert: TempoVolumeNearlyFull
+          expr: |
+            (kubelet_volume_stats_used_bytes{persistentvolumeclaim="tempo-storage"}
+              / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="tempo-storage"}) > 0.85
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tempo PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+            description: "Tempo trace PVC is over 85% full. With block_retention: 240h, a trace volume spike could fill the PVC and crash Tempo. Increase the PVC or tighten retention."
