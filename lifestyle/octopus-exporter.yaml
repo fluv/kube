@@ -18,7 +18,7 @@ spec:
           image: ghcr.io/fluv/octopus-exporter@sha256:d34252504e30cad4a2fb64fcab15dcfa5a863c5493f351a5e23d04b3d10c21d1
           ports:
             - name: metrics
-              containerPort: 9097
+              containerPort: 9098
           env:
             - name: OCTOPUS_API_KEY
               valueFrom:
@@ -64,6 +64,7 @@ spec:
               cpu: 10m
               memory: 32Mi
             limits:
+              cpu: 100m
               memory: 64Mi
           readinessProbe:
             httpGet:
@@ -87,7 +88,7 @@ spec:
     app: octopus-exporter
   ports:
     - name: metrics
-      port: 9097
+      port: 9098
       targetPort: metrics
 ---
 apiVersion: monitoring.coreos.com/v1
