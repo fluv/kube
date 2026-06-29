@@ -19,8 +19,8 @@ spec:
             description: "Prometheus cannot scrape Tempo in the monitoring namespace. Traces are being dropped by the Alloy OTLP exporter."
         - alert: TempoVolumeNearlyFull
           expr: |
-            (kubelet_volume_stats_used_bytes{persistentvolumeclaim="tempo-storage"}
-              / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="tempo-storage"}) > 0.85
+            (kubelet_volume_stats_used_bytes{namespace="monitoring",persistentvolumeclaim="tempo-storage"}
+              / kubelet_volume_stats_capacity_bytes{namespace="monitoring",persistentvolumeclaim="tempo-storage"}) > 0.85
           for: 15m
           labels:
             severity: warning
