@@ -22,8 +22,5 @@ data:
           path: /var/tempo/traces
         wal:
           path: /var/tempo/wal
-    compactor:
-      compaction:
-        block_retention: 240h
     usage_report:
       reporting_enabled: false
