@@ -4,7 +4,7 @@ metadata:
   name: grafana-postgres
   namespace: grafana
 spec:
-  instances: 1
+  instances: 2
   monitoring:
     enablePodMonitor: true
   storage:
