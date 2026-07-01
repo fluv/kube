@@ -76,7 +76,7 @@ spec:
             enabled: true
             org_role: Admin
           auth.basic:
-            enabled: false
+            enabled: true
           users:
             default_theme: dark
             viewers_can_edit: true
@@ -141,7 +141,16 @@ spec:
             labelValue: "1"
             searchNamespace: ALL
             resource: configmap
-            reloadURL: "http://127.0.0.1:3000/api/admin/provisioning/datasources/reload"
+            envValueFrom:
+              GF_SIDECAR_ADMIN_USER:
+                secretKeyRef:
+                  name: grafana
+                  key: admin-user
+              GF_SIDECAR_ADMIN_PASS:
+                secretKeyRef:
+                  name: grafana
+                  key: admin-password
+            reloadURL: "http://$(GF_SIDECAR_ADMIN_USER):$(GF_SIDECAR_ADMIN_PASS)@127.0.0.1:3000/api/admin/provisioning/datasources/reload"
           dashboards:
             enabled: false
             label: grafana_dashboard
