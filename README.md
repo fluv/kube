@@ -13,13 +13,13 @@ The cluster runs on three node types:
 
 | Node | Role | Notes |
 |------|------|-------|
-| **Pi** (`pi.home.arpa`) | Control-plane + Pi-local services | Raspberry Pi 5 8GB, arm64, on my desk. Runs Claude MCP servers, Longhorn local disk services, and anything that needs home LAN access. |
+| **Pi** (`pi.home.arpa`) | Control-plane + Pi-local services | Raspberry Pi 5 8GB, arm64, on my desk. Runs Longhorn local disk services, the Awair and LG TV exporters (home LAN hardware), and anything explicitly pinned here; most Claude MCP servers currently sit here too. |
 | **saraneth** | Edge/ingress, non-k8s services | Bitfolk VPS, amd64, 4GB RAM. Cordoned — regular workloads don&rsquo;t schedule here, though DaemonSet pods (which tolerate cordons) still do. Public DNS points here, making it the ingress entry point. Hosts the k3s datastore (kine/PostgreSQL) and runs Mastodon&rsquo;s Redis and PostgreSQL outside k8s. |
 | **Hetzner workers** | Workload nodes | Ephemeral hel1 nodes provisioned by the cluster autoscaler. amd64. All general-purpose Kubernetes workloads land here unless they need LAN access or Pi-specific hardware. |
 
 Nodes are connected via a [**Tailscale**](https://tailscale.com) mesh VPN. The k3s datastore is PostgreSQL (via kine) on `saraneth`. Tailscale routes home-LAN traffic (`192.168.1.0/24`) to all nodes so Pi-scheduled pods can reach home devices.
 
-**Scheduling regime:** saraneth is cordoned, so only DaemonSet pods run there. The Pi is the landing zone for services with home-LAN or Pi-hardware dependencies. Everything else — stateless services, Loki, Grafana, Prometheus, observability — runs on Hetzner workers. A cluster autoscaler manages worker count; a descheduler runs periodically to consolidate pods onto fewer nodes when demand is low.
+**Scheduling regime:** saraneth is cordoned, so only DaemonSet pods run there. Services with home-LAN or Pi-hardware dependencies (Awair, LG TV) are pinned to the Pi via nodeSelector. Most other workloads — stateless services, Loki, Grafana, Prometheus, observability — run on Hetzner workers. Claude&rsquo;s MCP servers carry no node pinning and land wherever the scheduler puts them (currently mostly the Pi). A cluster autoscaler manages worker count; a descheduler runs periodically to consolidate pods onto fewer nodes when demand is low.
 
 **Ingress:** ingress-nginx runs as a DaemonSet on every node, exposed by k3s ServiceLB on each node&rsquo;s public IP. Public DNS currently points only at saraneth, which proxies to backends across the cluster; round-robin DNS over the worker IPs is planned (#485).
 
@@ -98,9 +98,9 @@ over the `lifestyle` namespace's Prometheus), and
 fans them out to in-cluster handlers (DeepSeek PR-review trigger and
 event log for claude-monitor).
 
-Claude&rsquo;s MCP servers and the Prometheus MCP run on the Pi — they need home
-LAN access or read local files. Stateless Claude infrastructure (webhook
-receiver, telemetry) runs on Hetzner workers.
+Claude&rsquo;s MCP servers have no explicit node placement (playwright-mcp,
+pinned to Hetzner, is the exception) — in practice most currently run on the
+Pi. The webhook receiver and telemetry pipeline run on Hetzner workers.
 
 ## End-user services
 
@@ -132,9 +132,10 @@ the Pi goes offline. Hetzner
 workers are ephemeral by design — any workload that can&rsquo;t tolerate node loss
 uses Longhorn replication.
 
-The Pi is the single point for home-LAN-dependent services (MCP servers, Awair
-exporter, LG TV exporter). These services become unavailable if the Pi is
-offline — accepted, as they&rsquo;re non-critical.
+The Pi is the single point for home-LAN hardware services (Awair exporter, LG
+TV exporter). These become unavailable if the Pi is offline — accepted, as
+they&rsquo;re non-critical. Unpinned MCP servers reschedule to Hetzner workers if
+the Pi goes away.
 
 ## Costs
 
