@@ -38,6 +38,9 @@ spec:
               cpu: 250m
               memory: 512Mi
             limits:
+              # CPU limit must also be explicit: the LimitRange would
+              # otherwise inject its 500m default and throttle reconciliation.
+              cpu: "2"
               memory: 1536Mi
           metrics:
             enabled: true
