@@ -58,6 +58,8 @@ spec:
           analytics:
             reporting_enabled: false
         singleBinary:
+          podAnnotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
           replicas: 1
           priorityClassName: cluster-low
           affinity:

@@ -54,6 +54,8 @@ spec:
               cpu: 10m
         storageClasses: []
         controller:
+          podAnnotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
           nodeSelector:
             instance.hetzner.cloud/provided-by: cloud
         node:

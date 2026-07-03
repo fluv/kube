@@ -14,6 +14,8 @@ spec:
     helm:
       valuesObject:
         priorityClassName: cluster-critical
+        podAnnotations:
+          cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
   project: cnpg
   syncPolicy:
     syncOptions:

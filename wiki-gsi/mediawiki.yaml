@@ -26,6 +26,7 @@ spec:
         # does not receive ConfigMap updates, so the pod must roll to pick up
         # edits. Incremented for $wgUseInstantCommons.
         wiki-gsi.fluv/settings-revision: "1"
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
     spec:
       securityContext:
         fsGroup: 33

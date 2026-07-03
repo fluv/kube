@@ -29,6 +29,8 @@ spec:
         dex:
           enabled: false
         controller:
+          podAnnotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
           metrics:
             enabled: true
             serviceMonitor:
@@ -55,6 +57,8 @@ spec:
             serviceMonitor:
               enabled: true
         applicationSet:
+          podAnnotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
           metrics:
             enabled: true
             serviceMonitor:
