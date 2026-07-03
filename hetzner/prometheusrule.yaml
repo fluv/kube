@@ -22,3 +22,17 @@ spec:
           annotations:
             summary: "hcloud-init-data-update PostSync Job failed"
             description: "The hcloud-init-data-update Job has failed. The autoscaler cluster-config secret may be stale — new Hetzner nodes will be provisioned with the old template. Check the Job logs in kube-system."
+    - name: hetzner-node-labels
+      rules:
+        - alert: HetznerNodeMissingDurableLabel
+          expr: |
+            kube_node_labels{label_instance_hetzner_cloud_provided_by="cloud"}
+              unless on (node)
+            kube_node_labels{label_storage_zuzak_uk_durable="true"}
+          for: 5m
+          labels:
+            severity: warning
+            component: hetzner-node-labels
+          annotations:
+            summary: "Hetzner node missing storage.zuzak.uk/durable label"
+            description: "Node {{ $labels.node }} is provisioned by Hetzner but does not have storage.zuzak.uk/durable=true. The node was not labelled as durable at join time — longhorn-durable replicas cannot be placed here until the label is applied. Check cloud-init and apply the label manually if the node is already running."

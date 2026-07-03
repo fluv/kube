@@ -14,12 +14,14 @@ The cluster runs on three node types:
 | Node | Role | Notes |
 |------|------|-------|
 | **Pi** (`pi.home.arpa`) | Control-plane + Pi-local services | Raspberry Pi 5 8GB, arm64, on my desk. Runs Claude MCP servers, Longhorn local disk services, and anything that needs home LAN access. |
-| **saraneth** | Edge/ingress, non-k8s services | Bitfolk VPS, amd64, 4GB RAM. Cordoned — Kubernetes workloads don&rsquo;t schedule here. Hosts ingress-nginx, the k3s datastore (kine/PostgreSQL), and runs Mastodon&rsquo;s Redis and PostgreSQL outside k8s. |
+| **saraneth** | Edge/ingress, non-k8s services | Bitfolk VPS, amd64, 4GB RAM. Cordoned — regular workloads don&rsquo;t schedule here, though DaemonSet pods (which tolerate cordons) still do. Public DNS points here, making it the ingress entry point. Hosts the k3s datastore (kine/PostgreSQL) and runs Mastodon&rsquo;s Redis and PostgreSQL outside k8s. |
 | **Hetzner workers** | Workload nodes | Ephemeral hel1 nodes provisioned by the cluster autoscaler. amd64. All general-purpose Kubernetes workloads land here unless they need LAN access or Pi-specific hardware. |
 
 Nodes are connected via a [**Tailscale**](https://tailscale.com) mesh VPN. The k3s datastore is PostgreSQL (via kine) on `saraneth`. Tailscale routes home-LAN traffic (`192.168.1.0/24`) to all nodes so Pi-scheduled pods can reach home devices.
 
-**Scheduling regime:** saraneth is cordoned and accepts only `CriticalAddonsOnly` pods (ingress-nginx). The Pi is the landing zone for services with home-LAN or Pi-hardware dependencies. Everything else — stateless services, Loki, Grafana, Prometheus, observability — runs on Hetzner workers. A cluster autoscaler manages worker count; a descheduler runs periodically to consolidate pods onto fewer nodes when demand is low.
+**Scheduling regime:** saraneth is cordoned, so only DaemonSet pods run there. The Pi is the landing zone for services with home-LAN or Pi-hardware dependencies. Everything else — stateless services, Loki, Grafana, Prometheus, observability — runs on Hetzner workers. A cluster autoscaler manages worker count; a descheduler runs periodically to consolidate pods onto fewer nodes when demand is low.
+
+**Ingress:** ingress-nginx runs as a DaemonSet on every node, exposed by k3s ServiceLB on each node&rsquo;s public IP. Public DNS currently points only at saraneth, which proxies to backends across the cluster; round-robin DNS over the worker IPs is planned (#485).
 
 ## Infrastructure
 
@@ -53,6 +55,13 @@ instance. Both are surfaced through a [**Grafana**](https://grafana.com/)
 instance at `grafana.gentoo-mine.ts.net` with anonymous admin access — no
 login, no public ingress; Tailscale ACLs are the access boundary.
 
+The cluster Prometheus retains 8 days of metrics on a 30 GiB Hetzner Cloud
+volume (`hcloud-volumes`). A 22 GB `retentionSize` cap sits above the ~16 GB
+that 8 days occupies, so it acts only as a backstop against filling the volume —
+time-based retention is the binding limit. A `PrometheusRetentionSizeCapBinding`
+alert fires if on-disk blocks ever ride near the cap, which would mean data is
+being evicted on size before the 8-day window is reached.
+
 A `logging-alerts` PrometheusRule covers the bits that would silently rot:
 Loki PVC headroom, stalled ingest, dropped write bytes, and per-node Alloy
 coverage.
@@ -69,6 +78,11 @@ namespace and scrapes personal (non-cluster) metrics:
 - **LG TV** — power state, input, volume, and picture-settings metrics from
   the living-room LG WebOS TV via the SSAP WebSocket protocol, pinned to the
   Pi to reach the home LAN.
+- **Meaco dehumidifier** — operating state, humidity, and target from the Meaco
+  dehumidifier via Tuya protocol, scraped from the in-cluster `meaco-exporter`
+  service.
+- **Outdoor weather** — temperature, relative humidity, dew point, and absolute
+  humidity from the Open-Meteo API (no hardware required), updated every 5 minutes.
 
 ## Claude bot infrastructure
 
@@ -76,7 +90,9 @@ The `claude` namespace and its sibling `claude-*` namespaces host the
 infrastructure Claude (the AI assistant the cluster&rsquo;s owner collaborates with)
 relies on: per-app MCP servers (`claude-waitrose-mcp`, `claude-asda-mcp`,
 `claude-grocy`, `claude-vestibule`, `claude-notebook`, `claude-printer-mcp`,
-`claude-playwright-mcp`), a Prometheus metrics MCP, and
+`claude-playwright-mcp`), two Prometheus metrics MCP servers
+(`prometheus-mcp` over the cluster Prometheus, `prometheus-mcp-lifestyle`
+over the `lifestyle` namespace's Prometheus), and
 `webhook-receiver`, a small aiohttp service exposed publicly at
 `webhook.k3s.fluv.net/github` that receives GitHub App webhooks and
 fans them out to in-cluster handlers (DeepSeek PR-review trigger and
@@ -97,10 +113,22 @@ the Pi.
 The pods run on Kubernetes (Hetzner workers); PostgreSQL and Redis remain on
 `saraneth` outside k8s. User media is stored on Google Cloud Storage.
 
+A [**Team Fortress 2**](https://www.teamfortress.com/) dedicated server runs in
+the `tf2` namespace, deployed by Argo CD from a separate repository,
+[`fluv/tf2-server`](https://github.com/fluv/tf2-server). It uses the community
+`cm2network/tf2` image, which downloads the ~14&nbsp;GB of game content at runtime
+via SteamCMD onto an `emptyDir` &mdash; the server holds no persistent state, so a
+rescheduled pod simply re-downloads. The Source engine is x86-only, so the
+workload is pinned to amd64 nodes with a `nodeSelector`. It is exposed on UDP
+NodePort 30015, and readiness is checked with an [A2S server
+query](https://developer.valvesoftware.com/wiki/Server_queries) against the pod
+IP rather than a TCP probe, since the game protocol is UDP-only.
+
 ## Fault tolerance
 
-The cluster tolerates Pi unavailability: saraneth runs ingress-nginx and the
-k3s datastore, so the cluster stays reachable if the Pi goes offline. Hetzner
+The cluster tolerates Pi unavailability: saraneth carries public DNS, an
+ingress-nginx pod, and the k3s datastore, so the cluster stays reachable if
+the Pi goes offline. Hetzner
 workers are ephemeral by design — any workload that can&rsquo;t tolerate node loss
 uses Longhorn replication.
 

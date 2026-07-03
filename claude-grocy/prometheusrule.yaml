@@ -1,24 +1,20 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: grocy
+  name: grocy-mcp
   namespace: claude-grocy
   labels:
-    release: prometheus
+    prometheus: lifestyle
 spec:
   groups:
-    - name: grocy-cronjob
+    - name: grocy-mcp-scrape
       rules:
-        - alert: ClaudeGrocyRestartFailed
-          expr: |
-            kube_job_status_failed{
-              namespace="claude-grocy",
-              job_name=~"claude-grocy-restart-.*"
-            } > 0
-          for: 5m
+        - alert: ClaudeGrocyMcpDown
+          expr: up{service="claude-grocy", namespace="claude-grocy"} == 0
+          for: 10m
           labels:
             severity: warning
             component: grocy
           annotations:
-            summary: "claude-grocy daily restart CronJob failed"
-            description: "The claude-grocy-restart CronJob has a failed Job run. The grocy MCP server may not have restarted as expected — check the pod logs and the job history in the claude-grocy namespace."
+            summary: "claude-grocy MCP server scrape target down"
+            description: "Prometheus has been unable to scrape /metrics from the claude-grocy MCP server for 10 minutes. Check the pod is running and the ServiceMonitor is healthy."

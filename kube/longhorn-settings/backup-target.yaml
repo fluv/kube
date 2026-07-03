@@ -11,4 +11,17 @@ metadata:
 spec:
   backupTargetURL: "s3://longhorn.k3s.fluv.net@eu-central-003/"
   credentialSecret: "longhorn-b2-secret"
-  pollInterval: "5m0s"
+  # Poll lists the whole backup store every interval, per backup volume. At 5m
+  # with ~11 volumes this generated ~3,400 Backblaze B2 Class C (list) calls/day,
+  # exceeding the free 2,500/day cap (see fluv/kube#481). 1h was expected to give
+  # ample headroom (~300/day) but the cap kept tripping anyway (fluv/kube#678):
+  # once the target goes Unavailable, the BackupTarget controller AND each of the
+  # ~12 per-volume BackupVolume controllers retry independently without honouring
+  # pollInterval, and each failed attempt is itself a Class C list call — B2's own
+  # dashboard showed ~2,500-2,600 Class C calls/day sustained through early July,
+  # almost entirely S3 List Objects. Real backups aren't affected (they upload via
+  # a separate path and completed daily throughout), only the sync/list status.
+  # Only daily syncing is actually needed here, so pushing the nominal interval
+  # out to 24h maximises headroom for the good path once the cap resets, even
+  # though it doesn't fix the underlying no-backoff retry storm on its own.
+  pollInterval: "24h0m0s"

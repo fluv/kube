@@ -30,6 +30,14 @@ spec:
       valuesObject:
         priorityClassName: cluster-low
         replicas: 1
+        podAnnotations:
+          cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+        # Plugins are reinstalled on every container start (persistence is
+        # disabled), so this list is the source of truth — the catalogue UI
+        # install button is unusable because anonymous auth can't grant the
+        # server-admin role plugin installation requires.
+        plugins:
+          - ventura-psychrometric-panel
         resources:
           requests:
             cpu: 50m
@@ -115,6 +123,17 @@ spec:
                 isDefault: false
                 jsonData:
                   timeInterval: 30s
+              - name: Tempo
+                uid: tempo
+                type: tempo
+                access: proxy
+                url: http://tempo.monitoring.svc.cluster.local:3200
+                isDefault: false
+                jsonData:
+                  tracesToLogsV2:
+                    datasourceUid: loki
+                  lokiSearch:
+                    datasourceUid: loki
         sidecar:
           datasources:
             enabled: true

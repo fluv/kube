@@ -1,32 +1,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lgtv-exporter
+  name: meaco-exporter
   namespace: lifestyle
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: lgtv-exporter
+      app: meaco-exporter
   template:
     metadata:
       labels:
-        app: lgtv-exporter
+        app: meaco-exporter
     spec:
       containers:
-        - name: lgtv-exporter
-          image: ghcr.io/fluv/lgtv-exporter@sha256:220c93f432f7b92c7a846df8f23cd2dc984f4b83999f3c465f20de378bb17a0e
+        - name: meaco-exporter
+          image: ghcr.io/fluv/meaco-exporter@sha256:ddf9e06d636e4d9a82d69a112146f23a045c78ba86c080620d47800facc3b17e
           ports:
             - name: metrics
-              containerPort: 9095
+              containerPort: 9097
           env:
-            - name: LGTV_IP
-              value: "192.168.1.185"
-            - name: LGTV_CLIENT_KEY
+            - name: MEACO_IP
+              value: "192.168.1.212"
+            - name: MEACO_VERSION
+              value: "3.5"
+            - name: PORT
+              value: "9097"
+            - name: HOME
+              value: "/tmp"
+            - name: MEACO_DEVICE_ID
               valueFrom:
                 secretKeyRef:
-                  name: lgtv-client-key
-                  key: client-key
+                  name: meaco-local-key
+                  key: device-id
+            - name: MEACO_LOCAL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: meaco-local-key
+                  key: local-key
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534
@@ -63,22 +74,22 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: lgtv-exporter
+  name: meaco-exporter
   namespace: lifestyle
   labels:
-    app: lgtv-exporter
+    app: meaco-exporter
 spec:
   selector:
-    app: lgtv-exporter
+    app: meaco-exporter
   ports:
     - name: metrics
-      port: 9095
+      port: 9097
       targetPort: metrics
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: lgtv-exporter
+  name: meaco-exporter
   namespace: lifestyle
   labels:
     prometheus: lifestyle
@@ -88,7 +99,7 @@ spec:
       - lifestyle
   selector:
     matchLabels:
-      app: lgtv-exporter
+      app: meaco-exporter
   endpoints:
     - port: metrics
       path: /metrics
@@ -98,19 +109,19 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: lgtv-exporter
+  name: meaco-exporter
   namespace: lifestyle
   labels:
     prometheus: lifestyle
 spec:
   groups:
-    - name: lgtv
+    - name: meaco
       rules:
-        - alert: LGTVExporterDown
-          expr: up{namespace="lifestyle", service="lgtv-exporter"} == 0
+        - alert: MeacoExporterDown
+          expr: up{namespace="lifestyle", service="meaco-exporter"} == 0
           for: 5m
           labels:
             severity: warning
           annotations:
-            summary: LGTV exporter pod is not scraping
-            description: The lgtv-exporter pod has not responded to scrapes for 5 minutes.
+            summary: Meaco exporter pod is not scraping
+            description: The meaco-exporter pod has not responded to scrapes for 5 minutes.

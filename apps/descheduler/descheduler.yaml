@@ -18,6 +18,9 @@ spec:
         deschedulerPolicy:
           profiles:
           - name: consolidation
+            namespaces:
+              exclude:
+                - tf2
             pluginConfig:
               - name: DefaultEvictor
                 args:
@@ -25,7 +28,8 @@ spec:
               - name: HighNodeUtilization
                 args:
                   thresholds:
-                    memory: 20
+                    cpu: 10
+                    memory: 45
             plugins:
               balance:
                 enabled:

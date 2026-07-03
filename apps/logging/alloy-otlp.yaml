@@ -14,10 +14,10 @@ metadata:
       Claude Code processes). Separate from the cluster-wide log-collection Alloy
       DaemonSet.
 spec:
-  project: claude
+  project: logging
   destination:
     server: https://kubernetes.default.svc
-    namespace: claude
+    namespace: alloy
   source:
     repoURL: https://github.com/grafana/alloy.git
     path: operations/helm/charts/alloy
@@ -85,6 +85,16 @@ spec:
                 }
                 output {
                   metrics = [otelcol.processor.transform.claude_descriptions.input]
+                  traces  = [otelcol.exporter.otlp.tempo.input]
+                }
+              }
+
+              otelcol.exporter.otlp "tempo" {
+                client {
+                  endpoint = "tempo.monitoring.svc.cluster.local:4317"
+                  tls {
+                    insecure = true
+                  }
                 }
               }
 
@@ -186,7 +196,7 @@ spec:
                 // selectively kept below; all other attachment subtypes are dropped there.
                 stage.drop {
                   source     = "entry_type"
-                  expression = "^(user|last-prompt|file-history-snapshot)$"
+                  expression = "^(user|last-prompt|file-history-snapshot|bridge-session)$"
                 }
 
                 // Drop lines that exceed Loki's hard limit (256KB) — assistant entries
@@ -302,6 +312,56 @@ spec:
                   stage.labels {
                     values = {
                       title = "",
+                    }
+                  }
+                }
+
+                // ai-title entries: AI-generated session title (JSON field is camelCase aiTitle)
+                stage.match {
+                  selector = `{type="ai-title"}`
+
+                  stage.json {
+                    expressions = {
+                      ai_title = "aiTitle",
+                    }
+                  }
+                  stage.labels {
+                    values = {
+                      ai_title = "",
+                    }
+                  }
+                }
+
+                // mode entries: session mode (e.g. "normal", "plan")
+                stage.match {
+                  selector = `{type="mode"}`
+
+                  stage.json {
+                    expressions = {
+                      mode = "mode",
+                    }
+                  }
+                  stage.labels {
+                    values = {
+                      mode = "",
+                    }
+                  }
+                }
+
+                // system entries: internal harness events; extract subtype as a label
+                // Subtypes observed: turn_duration, api_error, away_summary, bridge_status,
+                //                    compact_boundary, local_command, stop_hook_summary
+                stage.match {
+                  selector = `{type="system"}`
+
+                  stage.json {
+                    expressions = {
+                      subtype = "subtype",
+                    }
+                  }
+                  stage.labels {
+                    values = {
+                      subtype = "",
                     }
                   }
                 }

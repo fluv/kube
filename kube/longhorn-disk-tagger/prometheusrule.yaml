@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-disk-tagger
+  namespace: longhorn-system
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: longhorn-disk-tagger
+      rules:
+        - alert: LonghornDiskTaggerNotReady
+          expr: |
+            kube_daemonset_status_desired_number_scheduled{
+              daemonset="longhorn-disk-tagger",
+              namespace="longhorn-system"
+            }
+              - kube_daemonset_status_number_ready{
+              daemonset="longhorn-disk-tagger",
+              namespace="longhorn-system"
+            } > 0
+          for: 15m
+          labels:
+            severity: warning
+            component: longhorn-disk-tagger
+          annotations:
+            summary: "longhorn-disk-tagger not running on all expected nodes"
+            description: "{{ $value }} longhorn-disk-tagger pod(s) are scheduled but not ready. Disks on affected nodes will not be tagged 'durable', so longhorn-durable volumes cannot get replicas there. Check pod events in longhorn-system for image pull errors, RBAC failures, or patch errors."

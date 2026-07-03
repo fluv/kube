@@ -97,6 +97,19 @@ spec:
           annotations:
             summary: "Alloy is not running on every node"
             description: "Fewer healthy Alloy pods than cluster nodes — at least one node's logs are not being collected."
+        - alert: AlloyPodRestarted
+          expr: |
+            increase(kube_pod_container_status_restarts_total{
+              namespace="alloy",
+              container="alloy"
+            }[30m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: alloy
+          annotations:
+            summary: "Alloy pod {{ $labels.pod }} restarted"
+            description: "An Alloy pod restarted in the last 30 minutes. Log positions are not persisted across restarts, so the pod will replay log files from startup, flooding Loki with HTTP 400 'entry too old' errors. If /var/lib/alloy is mounted as a hostPath, verify the mount is present and the pod resumed cleanly."
 
     - name: pod-health
       rules:
@@ -164,3 +177,14 @@ spec:
           annotations:
             summary: "Prometheus PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full — ingest imminent"
             description: "Act now: tighten retention, grow the PVC, or scale down ingest before Prometheus halts."
+    - name: claude-mcp
+      rules:
+        - alert: ClaudePrometheusMCPLifestyleDown
+          expr: kube_deployment_status_replicas_ready{deployment="prometheus-mcp-lifestyle", namespace="claude"} == 0
+          for: 10m
+          labels:
+            severity: warning
+            component: claude-mcp
+          annotations:
+            summary: "prometheus-mcp-lifestyle has no ready replicas"
+            description: "The lifestyle Prometheus MCP server has had 0 ready replicas for 10 minutes. Claude cannot query lifestyle metrics (Awair, LG TV). Check the Deployment in the claude namespace."
