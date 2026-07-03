@@ -80,7 +80,7 @@ until the vestibule repo is made public, each package needs to be set
 to public explicitly (GitHub → Packages → *package name* → Package
 settings → Change visibility → Public), or an `imagePullSecret` added
 to both Deployments. Other Claude-facing apps in this cluster
-(`claude-grocy`, `router-mcp`) rely on public packages, so this
+(e.g. `claude-grocy`) rely on public packages, so this
 follows the existing pattern.
 
 ## Endpoints

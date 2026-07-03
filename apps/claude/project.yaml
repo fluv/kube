@@ -19,7 +19,6 @@ spec:
   sourceRepos:
     - https://github.com/fluv/kube.git
     - https://github.com/pab1it0/prometheus-mcp-server.git
-    - https://github.com/fluv/router-mcp
     - https://github.com/grafana/alloy.git
   clusterResourceWhitelist:
     - group: ""
