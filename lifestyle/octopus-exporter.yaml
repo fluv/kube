@@ -110,3 +110,34 @@ spec:
       path: /metrics
       interval: 60s
       scrapeTimeout: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: octopus-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: octopus
+      rules:
+        # Both rules are structurally silent while the Deployment is scaled
+        # to 0: no pods means no Endpoints, so the ServiceMonitor produces no
+        # target and neither series exists. They resume as soon as replicas > 0.
+        - alert: OctopusExporterDown
+          expr: up{namespace="lifestyle", service="octopus-exporter"} == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Octopus Energy exporter is not scraping
+            description: The octopus-exporter pod has not responded to scrapes for 10 minutes.
+        - alert: OctopusExporterScrapeError
+          expr: octopus_scrape_success == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Octopus Energy exporter scrapes are failing
+            description: The octopus-exporter has not successfully fetched consumption data for 10 minutes. Check API key and connectivity.
