@@ -19,9 +19,6 @@ type: kubernetes.io/service-account-token
 # Cluster-wide read access — explicit resource list, all namespaces.
 # Secrets are intentionally excluded; Claude reads secrets only where
 # a targeted RoleBinding via claude-namespace-admin grants it
-# (currently: claude, claude-grocy, claude-waitrose-mcp, claude-asda-mcp,
-# claude-vestibule, claude-notebook, claude-printer-mcp, claude-router-mcp,
-# longhorn-system, cert-manager).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -228,21 +225,6 @@ subjects:
     name: claude
     namespace: claude
 ---
-# Grant write access in the claude-router-mcp namespace.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: claude
-  namespace: claude-router-mcp
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: claude-namespace-admin
-subjects:
-  - kind: ServiceAccount
-    name: claude
-    namespace: claude
----
 # Grant write access in the claude-grocy namespace.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -324,6 +306,23 @@ kind: RoleBinding
 metadata:
   name: claude
   namespace: claude-printer-mcp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-namespace-admin
+subjects:
+  - kind: ServiceAccount
+    name: claude
+    namespace: claude
+---
+# Grant write access in the claude-playwright-mcp namespace.
+# Allows restarting the playwright-mcp pod when memory accumulates
+# (--shared-browser-context causes heap growth over long uptimes).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude
+  namespace: claude-playwright-mcp
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

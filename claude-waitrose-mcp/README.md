@@ -70,7 +70,7 @@ repository's visibility on first publish; if the `fluv/waitrose-mcp`
 repo is still private when the first image is pushed, the package needs
 to be set to public explicitly (GitHub → Packages → *waitrose-mcp* →
 Package settings → Change visibility → Public). Same pattern as
-`claude-grocy`, `claude-vestibule`, `router-mcp`.
+`claude-grocy`, `claude-vestibule`.
 
 ## Endpoints
 

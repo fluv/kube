@@ -21,7 +21,7 @@ spec:
           # Copy the kubectl binary into the shared volume so the python
           # container (which has no kubectl) can run it.
           # Pinned digest matches kube/longhorn-disk-tagger/daemonset.yaml.
-          image: docker.io/bitnami/kubectl@sha256:b9f4412e53f09d76b0991cdd29c0feff4c1d1e112b307e0ab155e5b050a9f4ec
+          image: docker.io/bitnami/kubectl@sha256:e21d3b5ca1f600677376b5468416e6d025a1380aaec77f981345cccec5916066
           command: [sh, -c, "cp $(which kubectl) /shared/kubectl"]
           resources:
             requests:
@@ -40,7 +40,7 @@ spec:
           # name suffix). Editing either file changes the hash, which makes the
           # ConfigMap a new tracked resource — that diff is what triggers the
           # ArgoCD sync that fires this PostSync hook. See hetzner/kustomization.yaml.
-          image: python:3.14-slim@sha256:63a4c7f612a00f92042cbdcc7cdc6a306f38485af0a200b9c89de7d9b1607d15
+          image: python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1
           command:
             - sh
             - -ec
