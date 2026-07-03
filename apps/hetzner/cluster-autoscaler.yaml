@@ -62,6 +62,7 @@ spec:
           scale-down-delay-after-add: 50m
           scale-down-unneeded-time: 5m
           skip-nodes-with-system-pods: "false"
+          skip-nodes-with-local-storage: "false"
           expander: priority
         # Prefer (arbitrarily selected) Helsinki over other regions; prefer CX33 over CX23 (better value)
         expanderPriorities: # higher fulfilled first
