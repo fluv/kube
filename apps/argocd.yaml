@@ -29,6 +29,16 @@ spec:
         dex:
           enabled: false
         controller:
+          # Explicit resources so the argocd LimitRange's 768Mi container
+          # default doesn't apply — the controller OOMs below ~1Gi at this
+          # cluster's app count (first seen 2026-07-03, first pod restart
+          # since the LimitRange was added in April).
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1536Mi
           metrics:
             enabled: true
             serviceMonitor:
