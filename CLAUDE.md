@@ -60,3 +60,21 @@ PrometheusRules live in `logging-alerts/` or alongside their workload manifest. 
 
 Changes to node taints or kubelet config on `saraneth` must be applied manually
 via `ssh z` — they are not managed by Argo CD.
+
+## Emergency kubectl patches
+
+When ArgoCD is unable to reconcile and a manual `kubectl patch` is needed to unblock
+the cluster, use strategic merge patch (the default). Never use `--type merge` on a
+resource that contains an array field (containers, volumes, volumeMounts, env, etc.).
+
+`--type merge` is JSON Merge Patch (RFC 7396), which **replaces arrays entirely** rather
+than merging by key. A patch that touches the `containers` array with `--type merge`
+strips every field not in the patch — including `image`, `args`, `env`, `ports`, probes,
+`securityContext`, and `volumeMounts`. The pod will fail with
+`spec.containers[0].image: Required value`. This caused the argocd-application-controller
+to be unschedulable for ~18 hours in July 2026 (kube#721).
+
+Safe alternatives:
+- Omit `--type` — default is strategic-merge-patch, which understands merge keys
+- `--type strategic-merge-patch` — explicit
+- `--type json` with RFC 6902 operations (op: add/replace on specific paths)
