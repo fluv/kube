@@ -18,12 +18,12 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: storage.zuzak.uk/durable
+                  - key: storage.k3s.fluv.net/durable
                     operator: In
                     # Allowlist: only run on nodes explicitly labelled as having
                     # durable storage. Unlabelled nodes (Pi, saraneth, future SD-backed
                     # nodes) are excluded by default — fail-closed instead of fail-open.
-                    # Apply with: kubectl label node <name> storage.zuzak.uk/durable=true
+                    # Apply with: kubectl label node <name> storage.k3s.fluv.net/durable=true
                     values: ["true"]
       containers:
         - name: tagger
