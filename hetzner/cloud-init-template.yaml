@@ -102,7 +102,7 @@ runcmd:
   # --flannel-iface: route pod overlay traffic over the private network for
   #   hcloud-to-hcloud efficiency; Pi/saraneth reach the VTEP via Tailscale subnet routes.
   # --kubelet-arg=provider-id: tells hcloud CCM which Hetzner server this is.
-  # --node-label: two labels applied at join:
+  # --node-label: three labels applied at join:
   #   instance.hetzner.cloud/provided-by=cloud — hcloud-csi DaemonSet nodeSelector and
   #     Prometheus nodeAffinity gate on this label. hcloud CCM sets it during address
   #     reconciliation, but reconciliation fails when --node-ip is a Tailscale IP (#450).
@@ -111,6 +111,9 @@ runcmd:
   #     simulation (HCLOUD_CLUSTER_CONFIG labels) stays consistent with what cloud-init
   #     actually applies. __LOCATION__ is substituted per-pool by
   #     update-cluster-config-secret.py (e.g. hetz-8gb-hel1 → hel1).
+  #   storage.k3s.fluv.net/durable=true — allowlist for longhorn-disk-tagger. Only nodes
+  #     carrying this label receive the tagger pod and have their disks tagged 'durable'.
+  #     Fail-closed: unlabelled nodes (pi, saraneth, future SD-backed nodes) are excluded.
   - >
     curl -sfL https://get.k3s.io |
     K3S_URL=https://saraneth.gentoo-mine.ts.net:6443
@@ -122,3 +125,4 @@ runcmd:
     --flannel-iface=enp7s0
     --node-label=instance.hetzner.cloud/provided-by=cloud
     --node-label=csi.hetzner.cloud/location=__LOCATION__
+    --node-label=storage.k3s.fluv.net/durable=true

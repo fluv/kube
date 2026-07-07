@@ -51,6 +51,7 @@ POOLS = [
 BASE_LABELS = {
     "kubernetes.io/os": "linux",
     "instance.hetzner.cloud/provided-by": "cloud",
+    "storage.k3s.fluv.net/durable": "true",
 }
 
 
