@@ -4,7 +4,7 @@ metadata:
   name: octopus-exporter
   namespace: lifestyle
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: octopus-exporter
@@ -122,6 +122,9 @@ spec:
   groups:
     - name: octopus
       rules:
+        # Both rules are structurally silent while the Deployment is scaled
+        # to 0: no pods means no Endpoints, so the ServiceMonitor produces no
+        # target and neither series exists. They resume as soon as replicas > 0.
         - alert: OctopusExporterDown
           expr: up{namespace="lifestyle", service="octopus-exporter"} == 0
           for: 10m
