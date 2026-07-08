@@ -201,8 +201,6 @@ spec:
             name: weather-exporter
             defaultMode: 0755
       priorityClassName: cluster-low
-      nodeSelector:
-        kubernetes.io/hostname: pi.home.arpa
 ---
 apiVersion: v1
 kind: Service
