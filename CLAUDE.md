@@ -1,17 +1,18 @@
 # Claude Code guide for this repo
 
-This is a GitOps repository for a personal two-node k3s cluster managed by Argo CD.
+This is a GitOps repository for a personal k3s cluster managed by Argo CD.
 
 ## Cluster layout
 
 | Node | Role | Notes |
 |------|------|-------|
-| `saraneth` | VPS (Bitfolk), amd64, 4GB RAM | Edge/ingress node; runs non-k8s services (PostgreSQL, Node.js, Tailscale) alongside k3s |
-| `pi.home.arpa` | Raspberry Pi 5, arm64, 8GB RAM | Primary workload node |
+| `pi.home.arpa` | Raspberry Pi 5, arm64, 8GB RAM | Control-plane; runs home-LAN-dependent services (MCP servers, hardware exporters) |
+| `saraneth` | VPS (Bitfolk), amd64, 4GB RAM | Edge/ingress entry point (public DNS points here); cordoned — only DaemonSet pods run here. Runs non-k8s services (PostgreSQL, Node.js, Tailscale) alongside k3s |
+| `hetz-*` | Hetzner Cloud, amd64, ephemeral | General workload nodes, provisioned by the cluster autoscaler; count varies with demand |
 
 Nodes are connected via Tailscale. The k3s datastore is PostgreSQL on `saraneth`.
-Additional ephemeral nodes in Hetzner Cloud are provisioned when required by an autoscaler.
 Tailscale is configured so that any node can hit the 192.168.1.0/24 domestic home network.
+The README carries the fuller topology description; keep the two consistent.
 
 ## Grafana dashboards
 
