@@ -72,8 +72,6 @@ spec:
               port: metrics
             initialDelaySeconds: 15
             periodSeconds: 30
-      nodeSelector:
-        kubernetes.io/hostname: pi.home.arpa
       priorityClassName: cluster-low
 ---
 apiVersion: v1
