@@ -26,7 +26,7 @@ spec:
         - name: slipway
           # Digest-pinned; Renovate maintains the pin, matching the
           # vestibule pattern.
-          image: ghcr.io/fluv/slipway:main@sha256:65d4171302bb0c59be0f9b158bfdfff29a7d56b5ad0898e7bd225ab46b180025
+          image: ghcr.io/fluv/slipway:main@sha256:eef6d08c48a4334156651566707481b7a63342b057efcee433687284758ea369
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
