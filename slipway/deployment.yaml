@@ -39,6 +39,9 @@ spec:
                 secretKeyRef:
                   name: grocy-api-key
                   key: GROCY_APIKEY_VALUE
+                  # Post-merge optional: without the secret the Grocy source
+                  # degrades to "unavailable" on the page; the pod stays up.
+                  optional: true
             - name: PROM_URL
               value: "http://prometheus-lifestyle.lifestyle.svc.cluster.local:9090"
             - name: SLIPWAY_FACTS
@@ -48,6 +51,9 @@ spec:
                 secretKeyRef:
                   name: slipway-home
                   key: SLIPWAY_HOME
+                  # Post-merge optional: without the secret the app falls back
+                  # to its neutral city-centre default coordinate.
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
