@@ -418,3 +418,20 @@ subjects:
   - kind: ServiceAccount
     name: claude
     namespace: claude
+---
+# Grant write access in the alloy namespace. Alloy (log collector DaemonSet
+# and OTLP receiver Deployment) moved to this namespace in PR #597 (#598).
+# Needed for exec access when debugging Alloy pods.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude
+  namespace: alloy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-namespace-admin
+subjects:
+  - kind: ServiceAccount
+    name: claude
+    namespace: claude
