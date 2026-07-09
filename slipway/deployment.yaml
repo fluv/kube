@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slipway
+  namespace: slipway
+  labels:
+    app: slipway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slipway
+  template:
+    metadata:
+      labels:
+        app: slipway
+    spec:
+      priorityClassName: cluster-low
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: slipway
+          # First publish happens when fluv/slipway lands on main; Renovate
+          # digest-pins this tag afterwards, matching the vestibule pattern.
+          image: ghcr.io/fluv/slipway:main
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GROCY_URL
+              value: "http://grocy.grocy.svc.cluster.local"
+            - name: GROCY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: grocy-api-key
+                  key: GROCY_APIKEY_VALUE
+            - name: PROM_URL
+              value: "http://prometheus-lifestyle.lifestyle.svc.cluster.local:9090"
+            - name: SLIPWAY_FACTS
+              value: "Humidity|meaco_current_humidity_percent|%;Target humidity|meaco_target_humidity_percent|%"
+            - name: SLIPWAY_HOME
+              valueFrom:
+                secretKeyRef:
+                  name: slipway-home
+                  key: SLIPWAY_HOME
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 60

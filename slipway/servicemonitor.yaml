@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: slipway
+  namespace: slipway
+  labels:
+    prometheus: lifestyle
+spec:
+  selector:
+    matchLabels:
+      app: slipway
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 5m

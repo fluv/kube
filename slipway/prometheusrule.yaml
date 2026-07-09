@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slipway
+  namespace: slipway
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: slipway
+      rules:
+        - alert: SlipwayDown
+          expr: up{namespace="slipway", service="slipway"} == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: slipway is not being scraped
+            description: >-
+              The slipway service in the slipway namespace has been down or
+              unscrapeable for 10 minutes.
+        - alert: SlipwaySourceDown
+          expr: slipway_source_up == 0
+          for: 2h
+          labels:
+            severity: warning
+          annotations:
+            summary: a slipway upstream source has been failing for 2 hours
+            description: >-
+              Source {{ $labels.source }} has failed every refresh for two
+              hours. The page degrades to a "source unavailable" note; the
+              upstream or its configuration needs attention.
