@@ -127,6 +127,13 @@ trigger and a replacement for the polling-based `claude-monitor`).
 
 ## End-user services
 
+The `slipway` namespace runs [**slipway**](https://github.com/fluv/slipway), a
+small Go service that renders recorded household data (Grocy stock, lifestyle
+Prometheus series) and nearby public map to-do lists (open OpenStreetMap notes,
+Wikidata items lacking an image) as a short daily list of concrete prompts,
+gated by the Open-Meteo precipitation forecast. Tailnet-only at
+`slipway.gentoo-mine.ts.net`; scraped by the lifestyle Prometheus.
+
 The `wiki-gsi` namespace runs a private [**MediaWiki**](https://www.mediawiki.org/)
 instance at `gsi.gentoo-mine.ts.net` — a personal wiki recovered from a decade-old
 installation. It consists of a MariaDB 11.4 LTS database (seeded from the original
