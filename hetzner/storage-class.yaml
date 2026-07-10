@@ -3,7 +3,9 @@ kind: StorageClass
 metadata:
   name: hcloud-volumes
   annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
+    # Not the default: longhorn is the intended cluster default StorageClass.
+    # PVCs targeting Hetzner volumes must name this class explicitly.
+    storageclass.kubernetes.io/is-default-class: "false"
 provisioner: csi.hetzner.cloud
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
