@@ -49,6 +49,24 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
             failureThreshold: 1
+          # Self-A2S over localhost exercises the same udp_loop players
+          # hit: a wedged socket loop fails this even while the process
+          # is alive. The knocker answers A2S regardless of whether the
+          # real server is awake, so this probe is valid in both states.
+          livenessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - |
+                  import socket
+                  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                  s.settimeout(3)
+                  s.sendto(b"\xff\xff\xff\xffTSource Engine Query\x00", ("127.0.0.1", 27015))
+                  s.recvfrom(1024)
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
           resources:
             requests:
               cpu: 10m
