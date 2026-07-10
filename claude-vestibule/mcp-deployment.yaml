@@ -11,7 +11,10 @@ spec:
   # state in memory. Multiple replicas would serve incompatible sessions
   # depending on which pod a request hits. See claude-grocy — which
   # learned this the hard way — for the matching pattern.
-  replicas: 1
+  #
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  # The vestibule web app itself (deployment.yaml) stays up.
+  replicas: 0
   selector:
     matchLabels:
       app: vestibule-mcp

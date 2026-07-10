@@ -13,7 +13,9 @@ spec:
   #
   # Recreate strategy keeps the single-replica invariant during rolls
   # (no two pods alive simultaneously, even briefly).
-  replicas: 1
+  #
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  replicas: 0
   strategy:
     type: Recreate
   selector:

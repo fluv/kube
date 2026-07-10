@@ -14,7 +14,10 @@ spec:
   #
   # Do not raise `replicas` or switch the strategy to RollingUpdate
   # without first redesigning the storage layer.
-  replicas: 1
+  #
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  # The notebook-data PVC is retained; only the pod stops.
+  replicas: 0
   strategy:
     type: Recreate
   selector:

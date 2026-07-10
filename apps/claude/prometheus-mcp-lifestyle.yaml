@@ -19,6 +19,8 @@ spec:
       # carries two handler types — which the API server rejects. A raw values
       # string preserves the null, leaving tcpSocket as the sole handler.
       values: |
+        # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+        replicaCount: 0
         prometheus:
           url: http://prometheus-lifestyle.lifestyle.svc.cluster.local:9090
           disableLinks: "true"

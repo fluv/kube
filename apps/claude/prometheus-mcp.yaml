@@ -13,6 +13,8 @@ spec:
     targetRevision: HEAD
     helm:
       values: |
+        # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+        replicaCount: 0
         prometheus:
           url: http://prometheus-claude.claude.svc.cluster.local:9090
           disableLinks: "true"

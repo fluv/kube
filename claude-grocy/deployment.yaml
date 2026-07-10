@@ -4,7 +4,8 @@ metadata:
   name: claude-grocy
   namespace: claude-grocy
 spec:
-  replicas: 1
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  replicas: 0
   selector:
     matchLabels:
       app: claude-grocy
