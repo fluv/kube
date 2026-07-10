@@ -12,6 +12,11 @@ spec:
     path: charts/prometheus-mcp-server
     targetRevision: HEAD
     helm:
+      # Raw values string (not valuesObject): the chart defaults both probes to
+      # httpGet, and only a literal null override removes that key during Helm's
+      # coalesce. Without the null, the rendered probe carries two handler types
+      # and the API server rejects it with "may not specify more than 1 handler
+      # type". Matches prometheus-mcp-lifestyle.yaml.
       values: |
         # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
         replicaCount: 0
@@ -21,9 +26,11 @@ spec:
         mcp:
           transport: sse
         livenessProbe:
+          httpGet: ~
           tcpSocket:
             port: http
         readinessProbe:
+          httpGet: ~
           tcpSocket:
             port: http
         resources:
