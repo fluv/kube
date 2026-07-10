@@ -199,3 +199,19 @@ spec:
           annotations:
             summary: "prometheus-mcp-lifestyle has no ready replicas"
             description: "The lifestyle Prometheus MCP server has had 0 ready replicas for 10 minutes despite being scheduled to run. Claude cannot query lifestyle metrics (Awair, LG TV). Check the Deployment in the claude namespace."
+
+        - alert: ClaudePrometheusMCPDown
+          # Counterpart to ClaudePrometheusMCPLifestyleDown, for the cluster
+          # Prometheus MCP. Same spec_replicas guard: inert while the Deployment
+          # is deliberately at zero, live again the moment it is restored.
+          expr: |
+            kube_deployment_status_replicas_ready{deployment="prometheus-mcp-prometheus-mcp-server", namespace="claude"} == 0
+            and
+            kube_deployment_spec_replicas{deployment="prometheus-mcp-prometheus-mcp-server", namespace="claude"} > 0
+          for: 10m
+          labels:
+            severity: warning
+            component: claude-mcp
+          annotations:
+            summary: "prometheus-mcp has no ready replicas"
+            description: "The cluster Prometheus MCP server has had 0 ready replicas for 10 minutes despite being scheduled to run. Claude cannot query cluster metrics. Check the Deployment in the claude namespace."
