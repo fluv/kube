@@ -26,11 +26,10 @@ spec:
       containers:
         - name: knocker
           # Built from knocker/ in fluv/tf2-server; the image entrypoint
-          # runs knocker.py. Digest pin to follow once the first image is
-          # published (Renovate manages it after that); until then pull
-          # the mutable tag every time.
-          image: ghcr.io/fluv/tf2-knocker:latest
-          imagePullPolicy: Always
+          # runs knocker.py. Digest-pinned like every other image here;
+          # Renovate manages the digest.
+          image: ghcr.io/fluv/tf2-knocker:latest@sha256:7e12d6b9f96db78fc2a7b6233244a7ca21642542e886ce5738e35e927eab05f0
+          imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
