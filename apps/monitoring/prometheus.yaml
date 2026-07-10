@@ -152,6 +152,12 @@ spec:
           enabled: false
         cleanPrometheusOperatorObjectNames: true
         kube-state-metrics:
+          # kube-state-metrics exposes no label_* dimensions on kube_node_labels
+          # unless the label is allowlisted here. HetznerNodeMissingDurableLabel
+          # (hetzner/prometheusrule.yaml) needs both of these; without the
+          # allowlist the rule evaluates against empty series and never fires.
+          metricLabelsAllowlist:
+            - nodes=[instance.hetzner.cloud/provided-by,storage.k3s.fluv.net/durable]
           rbac:
             extraRules:
               - apiGroups: [longhorn.io]

@@ -6,8 +6,18 @@ metadata:
   annotations:
     kubernetes.io/description: |
       a Longhorn storage class that avoids using SD cards
+    # StorageClass parameters are immutable; Replace lets ArgoCD apply
+    # parameter changes by recreating the object. Existing PVs are
+    # unaffected — a StorageClass is only a provisioning template.
+    argocd.argoproj.io/sync-options: Replace=true
 parameters:
   diskSelector: durable
+  # Only durable-tagged disks exist on Hetzner workers, and the steady
+  # state is two of them (fluv/kube#754). Without this, volumes fall back
+  # to the global default-replica-count of 3, which is unsatisfiable on
+  # two eligible nodes (hard node anti-affinity) and leaves every such
+  # volume permanently degraded.
+  numberOfReplicas: "2"
 provisioner: driver.longhorn.io
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
