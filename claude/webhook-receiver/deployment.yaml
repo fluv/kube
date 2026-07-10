@@ -23,7 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: webhook-receiver
-          image: ghcr.io/fluv/deepseek-receiver:main@sha256:c0328efb00c77b15d88145d209f06dfa200abb27117d833e87f152475a7e8b09
+          image: ghcr.io/fluv/deepseek-receiver:main@sha256:f78968b7619a29b065d817cae736b7d01da084f40a28789553202817baef7e57
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
