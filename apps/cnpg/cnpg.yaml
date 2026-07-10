@@ -14,6 +14,7 @@ spec:
     helm:
       valuesObject:
         priorityClassName: cluster-critical
+        affinity: {}
   project: cnpg
   syncPolicy:
     syncOptions:
