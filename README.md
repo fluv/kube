@@ -163,8 +163,8 @@ query](https://developer.valvesoftware.com/wiki/Server_queries) against the pod
 IP rather than a TCP probe, since the game protocol is UDP-only.
 
 The server spends most of its life empty, so it scales to zero when idle. A
-tiny always-on &ldquo;knocker&rdquo; pod (`tf2-knocker/`, a Python script from a
-ConfigMap on a stock `python:slim` image) shares the `app: tf2` Service
+tiny always-on &ldquo;knocker&rdquo; pod (`tf2-knocker/`, running the
+`ghcr.io/fluv/tf2-knocker` image built from `fluv/tf2-server`) shares the `app: tf2` Service
 selector and reports ready only while the real server has no ready replicas,
 so the Service&rsquo;s endpoints flip between the two automatically. While the
 server sleeps, the knocker answers A2S queries itself with a fake
