@@ -25,11 +25,17 @@ spec:
         fsGroup: 1000
       containers:
         - name: knocker
-          # Same pinned image as lifestyle/weather-exporter; Renovate
-          # manages the digest.
-          image: python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1
+          # Built from knocker/ in fluv/tf2-server; the image entrypoint
+          # runs knocker.py. Digest-pinned like every other image here;
+          # Renovate manages the digest.
+          image: ghcr.io/fluv/tf2-knocker:latest@sha256:8d27a8c99df153ad7680e9d9690c3cdcbacb4432c57dec935ecfb88d2e5b83c6
           imagePullPolicy: IfNotPresent
-          command: ["python3", "-u", "/app/knocker.py"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: POD_NAME
               valueFrom:
@@ -72,4 +78,5 @@ spec:
               cpu: 10m
               memory: 16Mi
             limits:
+              cpu: 100m
               memory: 64Mi
