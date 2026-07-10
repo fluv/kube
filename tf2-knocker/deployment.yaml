@@ -28,7 +28,7 @@ spec:
           # Built from knocker/ in fluv/tf2-server; the image entrypoint
           # runs knocker.py. Digest-pinned like every other image here;
           # Renovate manages the digest.
-          image: ghcr.io/fluv/tf2-knocker:latest@sha256:7e12d6b9f96db78fc2a7b6233244a7ca21642542e886ce5738e35e927eab05f0
+          image: ghcr.io/fluv/tf2-knocker:latest@sha256:8d27a8c99df153ad7680e9d9690c3cdcbacb4432c57dec935ecfb88d2e5b83c6
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
