@@ -16,6 +16,15 @@ spec:
     targetRevision: HEAD
     directory:
       recurse: true
+  # The tf2-knocker (see tf2-knocker/) scales this deployment 0<->1 at
+  # runtime; without these two settings selfHeal would immediately
+  # revert every scale change back to the replica count in git.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: tf2
+      jsonPointers:
+        - /spec/replicas
   syncPolicy:
     automated:
       prune: true
@@ -23,3 +32,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
