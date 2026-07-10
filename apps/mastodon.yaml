@@ -59,6 +59,7 @@ spec:
             prometheus:
               enable: true
           web:
+            affinity: {}
             resources:
               requests:
                 memory: 400Mi
@@ -66,12 +67,15 @@ spec:
               limits:
                 memory: 800Mi
           sidekiq:
+            affinity: {}
             resources:
               requests:
                 memory: 300Mi
                 cpu: 100m
               limits:
                 memory: 600Mi
+          streaming:
+            affinity: {}
         extraEnvVars:
           S3_FORCE_SINGLE_REQUEST: true
         ingress:
