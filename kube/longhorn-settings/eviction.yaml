@@ -1,0 +1,31 @@
+# Evictions may be delayed, never blocked (fluv/kube#754).
+#
+# kubernetes-cluster-autoscaler-enabled is the only Longhorn setting the
+# cluster-autoscaler ever sees: Longhorn deletes an instance-manager PDB
+# once every replica on that node has a healthy counterpart on another
+# node, letting CA's scale-down simulation pass. The node holding the
+# last healthy replica of any volume always keeps its PDB — data loss by
+# scale-down is structurally impossible. Replicas on a reaped node are
+# not migrated first; they rebuild from the surviving replica afterwards.
+#
+# This value was previously set live and never committed; codified here.
+apiVersion: longhorn.io/v1beta2
+kind: Setting
+metadata:
+  name: kubernetes-cluster-autoscaler-enabled
+  namespace: longhorn-system
+value: "true"
+---
+# block-if-contains-last-replica is the Longhorn default. The live value
+# had been hand-set to block-for-eviction, which does nothing for CA
+# (Longhorn v1.10 only reacts to node.spec.unschedulable, and CA taints
+# without cordoning — the LEP's taint clause was never implemented) but
+# turns every cordon, including k3s upgrade drains, into a full replica
+# evacuation of the node. The docs advise against leaving it enabled
+# outside planned maintenance.
+apiVersion: longhorn.io/v1beta2
+kind: Setting
+metadata:
+  name: node-drain-policy
+  namespace: longhorn-system
+value: "block-if-contains-last-replica"

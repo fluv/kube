@@ -25,14 +25,37 @@ spec:
     - name: hetzner-node-labels
       rules:
         - alert: HetznerNodeMissingDurableLabel
+          # The label is storage.k3s.fluv.net/durable — this alert previously
+          # matched storage.zuzak.uk/durable, a pre-rename name nothing writes,
+          # and kube-state-metrics only exposes node labels named in its
+          # metricLabelsAllowlist (set in apps/monitoring/prometheus.yaml).
+          # Both faults made it permanently inert; a node ran unlabelled for
+          # 38 days without a peep (fluv/kube#751).
           expr: |
             kube_node_labels{label_instance_hetzner_cloud_provided_by="cloud"}
               unless on (node)
-            kube_node_labels{label_storage_zuzak_uk_durable="true"}
+            kube_node_labels{label_storage_k3s_fluv_net_durable="true"}
           for: 5m
           labels:
             severity: warning
             component: hetzner-node-labels
           annotations:
-            summary: "Hetzner node missing storage.zuzak.uk/durable label"
-            description: "Node {{ $labels.node }} is provisioned by Hetzner but does not have storage.zuzak.uk/durable=true. The node was not labelled as durable at join time — longhorn-durable replicas cannot be placed here until the label is applied. Check cloud-init and apply the label manually if the node is already running."
+            summary: "Hetzner node missing storage.k3s.fluv.net/durable label"
+            description: "Node {{ $labels.node }} is provisioned by Hetzner but does not have storage.k3s.fluv.net/durable=true. The node was not labelled as durable at join time — longhorn-durable replicas cannot be placed here until the label is applied. Check cloud-init and apply the label manually if the node is already running."
+    - name: cluster-autoscaler
+      rules:
+        - alert: ClusterAutoscalerNodeStuckUnneeded
+          # Normal reap time for an unneeded node is scale-down-unneeded-time
+          # (5m). A node unneeded for 2h means something is blocking eviction —
+          # a PDB, an unevictable pod, an unregistered blocker. Evictions may
+          # be delayed, never blocked (fluv/kube#754); this alert is the
+          # backstop that says the rule is being violated. Requires the
+          # autoscaler ServiceMonitor (apps/hetzner/cluster-autoscaler.yaml).
+          expr: cluster_autoscaler_unneeded_nodes_count > 0
+          for: 2h
+          labels:
+            severity: warning
+            component: cluster-autoscaler
+          annotations:
+            summary: "Autoscaler node unneeded for 2h but not scaled down"
+            description: "{{ $value }} node(s) have been unneeded for over 2 hours without being removed. Check cluster-autoscaler logs for ScaleDownFailed events and 'cannot be removed' reasons — usually a PodDisruptionBudget (Longhorn instance-manager, CNPG) or an unevictable pod. See fluv/kube#754 for the delay-not-block principle and the remediation toolbox."

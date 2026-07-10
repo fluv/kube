@@ -63,7 +63,18 @@ spec:
           scale-down-unneeded-time: 5m
           skip-nodes-with-system-pods: "false"
           skip-nodes-with-local-storage: "false"
+          # CNPG postgres pods are owned by a Cluster CR, which CA does not
+          # recognise as a controller; with the default (true) their node is
+          # never a scale-down candidate. The CNPG operator recreates evicted
+          # instances, so the recreate-guarantee this flag exists for holds.
+          skip-nodes-with-custom-controller-pods: "false"
           expander: priority
+        serviceMonitor:
+          enabled: true
+          selector:
+            release: prometheus
+          namespace: kube-system
+          interval: 30s
         # Prefer (arbitrarily selected) Helsinki over other regions; prefer CX33 over CX23 (better value)
         expanderPriorities: # higher fulfilled first
           10: # use only if large pods need it

@@ -5,6 +5,22 @@ metadata:
   namespace: grafana
 spec:
   instances: 2
+  # Evictions may be delayed, never blocked (fluv/kube#754). Without this,
+  # the operator's primary PDB (minAvailable 1) makes whichever node hosts
+  # the primary permanently unremovable by the cluster-autoscaler, which
+  # simulates PDB feasibility before ever cordoning — the switchover-ahead-
+  # of-drain path never triggers. With PDBs disabled, evicting the primary
+  # starts an automatic failover to the replica instead. At 2 instances the
+  # operator creates no replica PDB, so this removes exactly one PDB.
+  enablePDB: false
+  # Keep pod terminationGracePeriodSeconds (= stopDelay) under the
+  # cluster-autoscaler's max-graceful-termination-sec default of 600, so an
+  # autoscaler drain never cuts PostgreSQL off mid-shutdown — the WAL flush
+  # to the replica is what keeps eviction-triggered failover lossless. A
+  # 1Gi Grafana database shuts down in seconds; the defaults (1800/180)
+  # were sized for far bigger instances.
+  stopDelay: 300
+  smartShutdownTimeout: 30
   monitoring:
     enablePodMonitor: true
   storage:
