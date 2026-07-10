@@ -7,7 +7,9 @@ spec:
   # Single replica is load-bearing: the MCP SDK's StreamableHTTP transport
   # keeps per-session state in memory. Multiple replicas would serve
   # incompatible sessions depending on which pod a request hits.
-  replicas: 1
+  #
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  replicas: 0
   selector:
     matchLabels:
       app: asda-mcp

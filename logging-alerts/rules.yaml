@@ -180,11 +180,22 @@ spec:
     - name: claude-mcp
       rules:
         - alert: ClaudePrometheusMCPLifestyleDown
-          expr: kube_deployment_status_replicas_ready{deployment="prometheus-mcp-lifestyle", namespace="claude"} == 0
+          # The Helm release name is prometheus-mcp-lifestyle; the chart appends
+          # its own name, so the Deployment is prometheus-mcp-lifestyle-prometheus-mcp-server.
+          # The bare release name matches no kube-state-metrics series.
+          #
+          # The spec_replicas guard makes this alert mean "should have replicas but
+          # has none" rather than "has none". A Deployment deliberately scaled to
+          # zero is not an outage, and kube-state-metrics keeps publishing
+          # replicas_ready=0 for it indefinitely.
+          expr: |
+            kube_deployment_status_replicas_ready{deployment="prometheus-mcp-lifestyle-prometheus-mcp-server", namespace="claude"} == 0
+            and
+            kube_deployment_spec_replicas{deployment="prometheus-mcp-lifestyle-prometheus-mcp-server", namespace="claude"} > 0
           for: 10m
           labels:
             severity: warning
             component: claude-mcp
           annotations:
             summary: "prometheus-mcp-lifestyle has no ready replicas"
-            description: "The lifestyle Prometheus MCP server has had 0 ready replicas for 10 minutes. Claude cannot query lifestyle metrics (Awair, LG TV). Check the Deployment in the claude namespace."
+            description: "The lifestyle Prometheus MCP server has had 0 ready replicas for 10 minutes despite being scheduled to run. Claude cannot query lifestyle metrics (Awair, LG TV). Check the Deployment in the claude namespace."

@@ -6,7 +6,11 @@ metadata:
 spec:
   # Single replica: browser contexts are in-memory per-process.
   # Multiple replicas would produce session routing failures.
-  replicas: 1
+  #
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  # This Deployment's nodeSelector pins a Hetzner worker; at zero replicas
+  # the autoscaler is free to reap that node. See README.
+  replicas: 0
   selector:
     matchLabels:
       app: playwright-mcp

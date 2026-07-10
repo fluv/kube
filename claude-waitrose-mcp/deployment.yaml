@@ -8,7 +8,9 @@ spec:
   # keeps per-session state in memory. Multiple replicas would serve
   # incompatible sessions depending on which pod a request hits. Same
   # constraint as claude-grocy and claude-vestibule.
-  replicas: 1
+  #
+  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
+  replicas: 0
   selector:
     matchLabels:
       app: waitrose-mcp
