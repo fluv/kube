@@ -162,6 +162,20 @@ NodePort 30015, and readiness is checked with an [A2S server
 query](https://developer.valvesoftware.com/wiki/Server_queries) against the pod
 IP rather than a TCP probe, since the game protocol is UDP-only.
 
+The server spends most of its life empty, so it scales to zero when idle. A
+tiny always-on &ldquo;knocker&rdquo; pod (`tf2-knocker/`, a Python script from a
+ConfigMap on a stock `python:slim` image) shares the `app: tf2` Service
+selector and reports ready only while the real server has no ready replicas,
+so the Service&rsquo;s endpoints flip between the two automatically. While the
+server sleeps, the knocker answers A2S queries itself with a fake
+&ldquo;sleeping&rdquo; response &mdash; keeping the server browser and `tf2-web`
+status page working without waking anything &mdash; and scales the deployment
+to 1 on the first real connect packet; once the server is up, it scales back
+to 0 after 30 minutes with no players. The `tf2-server` Application ignores
+replica-count drift so Argo CD doesn&rsquo;t fight the knocker. A cold wake
+re-downloads the game content, so joining a sleeping server takes minutes,
+not seconds.
+
 ## Fault tolerance
 
 I can reasonably expect my VPS to be up and running at all times.

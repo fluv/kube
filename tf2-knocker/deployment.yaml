@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tf2-knocker
+  namespace: tf2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tf2-knocker
+  template:
+    metadata:
+      labels:
+        # app: tf2 puts this pod behind the same Services as the real
+        # server; readiness (below) decides which of the two actually
+        # receives traffic. The knocker pod has its own controller
+        # ownerRef, so the tf2 Deployment never adopts or counts it.
+        app: tf2
+        app.kubernetes.io/name: tf2-knocker
+    spec:
+      serviceAccountName: tf2-knocker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: knocker
+          image: python:3.13-slim
+          imagePullPolicy: IfNotPresent
+          command: ["python3", "-u", "/app/knocker.py"]
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: IDLE_MINUTES
+              value: "30"
+          ports:
+            - containerPort: 27015
+              protocol: UDP
+          # Ready only while the tf2 deployment has 0 ready replicas --
+          # the script manages /tmp/ready. This is what flips Service
+          # endpoints between knocker and real server.
+          readinessProbe:
+            exec:
+              command: ["test", "-f", "/tmp/ready"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
