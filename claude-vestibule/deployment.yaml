@@ -8,7 +8,7 @@ metadata:
     # fetches /_manifest at startup. Vestibule is wave 0; the MCP is wave 1.
     argocd.argoproj.io/sync-wave: "0"
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: vestibule
