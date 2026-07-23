@@ -27,8 +27,8 @@ spec:
             - name: DISCORD_GUILD_ID
               valueFrom:
                 secretKeyRef:
-                  key: discord
-                  name: guild-id
+                  name: discord
+                  key: guild-id
                   optional: true
           ports:
             - name: http
