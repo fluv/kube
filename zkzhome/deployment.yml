@@ -14,6 +14,10 @@ spec:
       labels:
         app: zkzhome
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: zkzhome
           image: ghcr.io/zuzak/zkzhome
@@ -44,6 +48,7 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 32Mi
-            limits:
               memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
