@@ -1,0 +1,23 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zkzhome
+  namespace: zkzhome
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: zkzhome
+  project: default
+  source:
+    path: zkzhome
+    repoURL: https://github.com/fluv/kube.git
+    targetRevision: HEAD
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

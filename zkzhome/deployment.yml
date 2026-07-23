@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zkzhome
+  namespace: zkzhome
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zkzhome
+  template:
+    metadata:
+      labels:
+        app: zkzhome
+    spec:
+      containers:
+        - name: zkzhome
+          image: ghcr.io/zuzak/zkzhome
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DISCORD_GUILD_ID
+              valueFrom:
+                secretKeyRef:
+                  key: discord
+                  name: guild-id
+                  optional: true
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
