@@ -18,6 +18,11 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: zkzhome
           image: ghcr.io/zuzak/zkzhome@sha256:8323231e7e057989945d030f9de740c6755075de19dd0309d7ff8da8aa0f3b37
