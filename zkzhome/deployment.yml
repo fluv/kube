@@ -20,7 +20,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: zkzhome
-          image: ghcr.io/zuzak/zkzhome@sha256:5dbadeff600f10c9f71093f19b65e92e737ed6adc9b06f6ae59e00d7402c19f6
+          image: ghcr.io/zuzak/zkzhome@sha256:7d4afd93eeee625feaaefd9667ac701a3e8b8dffa5b8b184dc2629f9c0a9fc36
           env:
             - name: PORT
               value: "8080"
