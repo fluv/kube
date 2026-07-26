@@ -1,8 +1,19 @@
+# RBAC for using Deepseek in Claude Code
+# read-only access to everything except secrets
+# read-write access to `deepseek` namespace secrets so it can rotate its own creds and access things
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: deepseek
+  labels:
+    prometheus: claude
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: deepseek
-  namespace: claude
+  namespace: deepseek
 ---
 # Long-lived token for Claude's kubeconfig.
 # k8s 1.24+ no longer auto-creates SA tokens; this Secret causes the
@@ -11,7 +22,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: deepseek-token
-  namespace: claude
+  namespace: deepseek
   annotations:
     kubernetes.io/service-account.name: deepseek
 type: kubernetes.io/service-account-token
@@ -27,4 +38,28 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: deepseek
-    namespace: claude
+    namespace: deepseek
+---
+# Grant deepseek access to manage its own secrets
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manage-secrets
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deepseek-secrets
+  namespace: deepseek
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manage-secrets
+subjects:
+  - kind: ServiceAccount
+    name: deepseek
+    namespace: deepseek
