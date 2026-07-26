@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deepseek
+  namespace: claude
+---
+# Long-lived token for Claude's kubeconfig.
+# k8s 1.24+ no longer auto-creates SA tokens; this Secret causes the
+# token controller to populate .data.token.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: deepseek-token
+  namespace: claude
+  annotations:
+    kubernetes.io/service-account.name: deepseek
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deepseek-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-read
+subjects:
+  - kind: ServiceAccount
+    name: deepseek
+    namespace: claude
