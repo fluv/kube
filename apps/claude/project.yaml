@@ -16,6 +16,8 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: tailscale
       server: https://kubernetes.default.svc
+    - namespace: deepseek
+      server: https://kubernetes.default.svc
   sourceRepos:
     - https://github.com/fluv/kube.git
     - https://github.com/pab1it0/prometheus-mcp-server.git
