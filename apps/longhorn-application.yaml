@@ -20,7 +20,7 @@ spec:
             jobEnabled: false
           csi:
             attacherReplicaCount: 1
-            provisionerReplicaCount: 2  # minAvailable=1 PDB + 2 replicas = 1 disruption allowed
+            provisionerReplicaCount: 1
             resizerReplicaCount: 1
             snapshotterReplicaCount: 1
           longhornUI:
