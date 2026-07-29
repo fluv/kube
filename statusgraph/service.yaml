@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: statusgraph
+  namespace: statusgraph
+spec:
+  selector:
+    app: statusgraph
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: http

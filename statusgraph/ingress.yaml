@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: statusgraph
+  namespace: statusgraph
+  annotations:
+    tailscale.com/hostname: statusgraph
+    tailscale.com/proxy-class: spread-across-nodes
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - statusgraph
+  rules:
+    - host: statusgraph
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: statusgraph
+                port:
+                  number: 8000

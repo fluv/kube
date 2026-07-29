@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statusgraph
+  namespace: statusgraph
+  labels:
+    app: statusgraph
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: statusgraph
+  template:
+    metadata:
+      labels:
+        app: statusgraph
+    spec:
+      priorityClassName: cluster-low
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+      containers:
+        - name: manager
+          image: quay.io/moolen/statusgraph:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - server
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 150Mi
+            limits:
+              cpu: 100m
+              memory: 150Mi
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/statusgraph/
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config-volume
+          configMap:
+            name: statusgraph-config
+      terminationGracePeriodSeconds: 10
