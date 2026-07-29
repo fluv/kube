@@ -32,6 +32,13 @@ spec:
               enabled: true
           defaultSettings:
             storageOverProvisioningPercentage: 200
+            # Pin CSI provisioner and other system components to control-plane nodes
+            # (pi.home.arpa, saraneth). Hetzner burst nodes lack this label, so the
+            # match acts as anti-affinity: system pods never land on ephemeral nodes,
+            # preventing PDB deadlocks that block cluster-autoscaler scale-down.
+            # nodeSelector can't express NotIn; this positive match achieves the same
+            # result for all nodes that exist or will exist in this cluster.
+            systemManagedComponentsNodeSelector: "node-role.kubernetes.io/control-plane:true"
           ingress:
             enabled: true
             tls: true
