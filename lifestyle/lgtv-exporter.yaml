@@ -111,6 +111,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: lg-tv
           annotations:
             summary: LGTV exporter pod is not scraping
             description: The lgtv-exporter pod has not responded to scrapes for 5 minutes.

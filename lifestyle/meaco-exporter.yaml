@@ -122,6 +122,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: meaco
           annotations:
             summary: Meaco exporter pod is not scraping
             description: The meaco-exporter pod has not responded to scrapes for 5 minutes.

@@ -253,6 +253,7 @@ spec:
           for: 15m
           labels:
             severity: warning
+            component: weather
           annotations:
             summary: "Outdoor weather exporter cannot reach Open-Meteo"
             description: "weather-exporter has failed to fetch from Open-Meteo for 15 minutes. Check pod logs and network connectivity."

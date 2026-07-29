@@ -128,6 +128,7 @@ spec:
           for: 10m
           labels:
             severity: warning
+            component: octopus
           annotations:
             summary: Octopus Energy exporter is not scraping
             description: The octopus-exporter pod has not responded to scrapes for 10 minutes.
@@ -136,6 +137,7 @@ spec:
           for: 10m
           labels:
             severity: warning
+            component: octopus
           annotations:
             summary: Octopus Energy exporter scrapes are failing
             description: The octopus-exporter has not successfully fetched consumption data for 10 minutes. Check API key and connectivity.

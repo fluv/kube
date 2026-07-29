@@ -16,6 +16,7 @@ spec:
           for: 1h
           labels:
             severity: warning
+            component: saraneth
           annotations:
             summary: "Saraneth WAN egress approaching monthly cap"
             description: >-
@@ -30,6 +31,7 @@ spec:
           for: 15m
           labels:
             severity: critical
+            component: saraneth
           annotations:
             summary: "Saraneth WAN egress on track to exceed monthly cap"
             description: >-
@@ -45,6 +47,7 @@ spec:
           for: 30m
           labels:
             severity: warning
+            component: saraneth
           annotations:
             summary: "Saraneth WAN egress rate would exceed 1 TB/mo"
             description: >-

@@ -14,6 +14,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: botsnack
           annotations:
             summary: botsnack has no available replicas
             description: The botsnack deployment has had zero available replicas for 5 minutes.
@@ -23,6 +24,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: botsnack
           annotations:
             summary: botsnack is crash-looping
             description: The botsnack pod has restarted more than 3 times in the last hour.

@@ -14,6 +14,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: wiki-gsi
           annotations:
             summary: GSI wiki is unavailable
             description: The mediawiki deployment has had zero available replicas for 5 minutes.
@@ -23,6 +24,7 @@ spec:
           for: 5m
           labels:
             severity: critical
+            component: wiki-gsi
           annotations:
             summary: GSI wiki database is unavailable
             description: The MariaDB deployment has had zero available replicas for 5 minutes. The wiki is down and data may be at risk.
@@ -35,6 +37,7 @@ spec:
           for: 10m
           labels:
             severity: warning
+            component: wiki-gsi
           annotations:
             summary: GSI wiki database PVC nearly full
             description: The wiki-gsi-db PVC has less than 10% free space remaining.

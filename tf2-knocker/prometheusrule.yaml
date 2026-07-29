@@ -17,6 +17,7 @@ spec:
           for: 10m
           labels:
             severity: warning
+            component: tf2-knocker
           annotations:
             summary: tf2 is scaled to zero and the knocker is down
             description: >-
@@ -29,6 +30,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: tf2-knocker
           annotations:
             summary: tf2-knocker is crash-looping
             description: The tf2-knocker pod has restarted more than 3 times in the last hour.
@@ -41,6 +43,7 @@ spec:
           for: 45m
           labels:
             severity: warning
+            component: tf2-knocker
           annotations:
             summary: tf2 was woken but never became available
             description: >-
