@@ -14,6 +14,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: telegram-trading
           annotations:
             summary: telegram-trading has no available replicas
             description: The telegram-trading deployment has had zero available replicas for 5 minutes. The bot is not running.
@@ -23,6 +24,7 @@ spec:
           for: 5m
           labels:
             severity: warning
+            component: telegram-trading
           annotations:
             summary: telegram-trading is crash-looping
             description: The telegram-trading pod has restarted more than 3 times in the last hour.

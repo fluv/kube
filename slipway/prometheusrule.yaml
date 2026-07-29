@@ -14,6 +14,7 @@ spec:
           for: 10m
           labels:
             severity: warning
+            component: slipway
           annotations:
             summary: slipway is not being scraped
             description: >-
@@ -24,6 +25,7 @@ spec:
           for: 2h
           labels:
             severity: warning
+            component: slipway
           annotations:
             summary: a slipway upstream source has been failing for 2 hours
             description: >-

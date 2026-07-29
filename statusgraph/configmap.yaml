@@ -16,7 +16,7 @@ data:
           - severity: "critical"
           - severity: "warning"
         service_labels:
-          - service_id
+          - component
         service_annotations:
           - statusgraph-node
       metrics: {}
