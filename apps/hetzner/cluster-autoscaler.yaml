@@ -30,7 +30,7 @@ spec:
             instanceType: cx23
             region: hel1
           - name: hetz-8gb-hel1
-            minSize: 1
+            minSize: 0
             maxSize: 2
             instanceType: cx33 # 8.99 EUR/mo
             region: hel1
