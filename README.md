@@ -140,6 +140,12 @@ installation. It consists of a MariaDB 11.4 LTS database (seeded from the origin
 raw data directory) and a MediaWiki 1.43 LTS pod, both pinned to the Pi. The wiki is
 private; only authenticated users with the `user` group or above can read or edit.
 
+The `statusgraph` namespace runs [**statusgraph**](https://github.com/moolen/statusgraph),
+a graph-based status page for distributed systems that consumes Prometheus metrics and
+Alertmanager alerts. It renders an interactive topology map where nodes represent services
+and edges represent dependencies, with status indicators driven by Alertmanager alerts.
+Tailnet-only at `statusgraph.gentoo-mine.ts.net`.
+
 We&rsquo;re running a single-user [**Mastodon**](https://joinmastodon.org/) instance on
 Kubernetes. This used to run solely on my VPS, but this caused problems: it is
 a disconcertingly resource-intensive Ruby program, and it meant my VPS often

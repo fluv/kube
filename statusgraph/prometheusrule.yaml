@@ -1,0 +1,39 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: statusgraph
+  namespace: statusgraph
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: statusgraph
+      rules:
+        - alert: StatusgraphDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="statusgraph",
+              deployment="statusgraph"
+            } == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "statusgraph is down"
+            description: |
+              The statusgraph deployment has zero available replicas
+              for more than 5 minutes.
+        - alert: StatusgraphCrashLooping
+          expr: |
+            increase(kube_pod_container_status_restarts_total{
+              namespace="statusgraph",
+              container="manager"
+            }[10m]) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "statusgraph is crash looping"
+            description: |
+              The statusgraph container has restarted more than 3 times
+              in the last 10 minutes.
