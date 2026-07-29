@@ -184,6 +184,8 @@ spec:
                             nilIsZero: true
         defaultRules:
           create: true
+          additionalRuleLabels:
+            component: kubernetes
           rules:
             etcd: false
             kubeProxy: false
