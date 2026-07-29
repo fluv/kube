@@ -6,8 +6,10 @@ metadata:
 data:
   config.yaml: |
     upstream:
-      prometheus: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
-      alertmanager: "http://prometheus-kube-prometheus-alertmanager.monitoring.svc.cluster.local:9093"
+      prometheus:
+        url: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
+      alertmanager:
+        url: "http://prometheus-kube-prometheus-alertmanager.monitoring.svc.cluster.local:9093"
     mapping:
       alerts:
         label_selector:
