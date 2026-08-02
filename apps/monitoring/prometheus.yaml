@@ -142,6 +142,16 @@ spec:
           admissionWebhooks:
             certManager:
               enabled: true
+        kubeApiServer:
+          serviceMonitor:
+            metricRelabelings:
+              # k3s apiserver metrics carry a component label (e.g.
+              # component="apiserver") that collides with the component: kubernetes
+              # label set by the kube-apiserver-availability recording rules,
+              # producing "vector contains metrics with the same labelset" failures.
+              # Drop it on ingestion; the recording rules add it back correctly.
+              - action: labeldrop
+                regex: component
         kubeEtcd:
           enabled: false
         kubeScheduler:
