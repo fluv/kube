@@ -142,6 +142,21 @@ spec:
           admissionWebhooks:
             certManager:
               enabled: true
+        kubeApiServer:
+          serviceMonitor:
+            metricRelabelings:
+              # PR #775 added defaultRules.additionalRuleLabels: {component: kubernetes}.
+              # After Prometheus restarted (Jul 31), the kube-apiserver-availability
+              # recording rules began failing with "vector contains metrics with the
+              # same labelset." On k3s, raw apiserver metrics carry a component label
+              # that the sum-by aggregation strips, but the recording rule chain
+              # produces collisions after a cold reload of the ruleset.
+              #
+              # Drop component from apiserver metrics at ingestion. No consumer reads
+              # it — all rules select by job="apiserver", and the recording rules
+              # stamp component: kubernetes on output.
+              - action: labeldrop
+                regex: component
         kubeEtcd:
           enabled: false
         kubeScheduler:
