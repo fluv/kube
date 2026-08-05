@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: haverland-exporter
-          image: ghcr.io/fluv/haverland-exporter:v1.0.0
+          image: ghcr.io/fluv/haverland-exporter@sha256:43b75c628a92fef8e31ab753a518ae61ea0b3cffbad41c1af85f40d7ef7af4e5
           ports:
             - name: metrics
               containerPort: 9093
