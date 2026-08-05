@@ -16,6 +16,11 @@ spec:
         app: statusgraph
     spec:
       priorityClassName: cluster-low
+      # Image (quay.io/moolen/statusgraph) is amd64-only. Without this pin the
+      # descheduler can evict the pod onto the arm64 Pi, where it crashloops
+      # with exec format error (kube#785).
+      nodeSelector:
+        kubernetes.io/arch: amd64
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
