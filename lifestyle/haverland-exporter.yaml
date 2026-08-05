@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: haverland-exporter
+  namespace: lifestyle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: haverland-exporter
+  template:
+    metadata:
+      labels:
+        app: haverland-exporter
+    spec:
+      containers:
+        - name: haverland-exporter
+          image: ghcr.io/fluv/haverland-exporter@sha256:43b75c628a92fef8e31ab753a518ae61ea0b3cffbad41c1af85f40d7ef7af4e5
+          ports:
+            - name: metrics
+              containerPort: 9093
+          env:
+            - name: HAVERLAND_DEVICE_ID
+              value: "744383760e9383d475"
+            - name: PORT
+              value: "9093"
+            - name: HAVERLAND_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: haverland-creds
+                  key: username
+            - name: HAVERLAND_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: haverland-creds
+                  key: password
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      nodeSelector:
+        kubernetes.io/hostname: pi.home.arpa
+      priorityClassName: cluster-low
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: haverland-exporter
+  namespace: lifestyle
+  labels:
+    app: haverland-exporter
+spec:
+  selector:
+    app: haverland-exporter
+  ports:
+    - name: metrics
+      port: 9093
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: haverland-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  namespaceSelector:
+    matchNames:
+      - lifestyle
+  selector:
+    matchLabels:
+      app: haverland-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: haverland-exporter
+  namespace: lifestyle
+  labels:
+    prometheus: lifestyle
+spec:
+  groups:
+    - name: haverland
+      rules:
+        - alert: HaverlandExporterDown
+          expr: up{namespace="lifestyle", service="haverland-exporter"} == 0
+          for: 5m
+          labels:
+            severity: warning
+            component: haverland
+          annotations:
+            summary: Haverland exporter pod is not scraping
+            description: The haverland-exporter pod has not responded to scrapes for 5 minutes.
+        - alert: HaverlandApiUnreachable
+          expr: haverland_up == 0
+          for: 15m
+          labels:
+            severity: warning
+            component: haverland
+          annotations:
+            summary: Helki cloud API unreachable
+            description: The exporter could not reach the Helki cloud API for 15 minutes.
+        - alert: HaverlandRadiatorOffline
+          expr: haverland_radiator_up == 0
+          for: 15m
+          labels:
+            severity: warning
+            component: haverland
+          annotations:
+            summary: A Haverland radiator is not reporting
+            description: One or more radiators have not reported status for 15 minutes.

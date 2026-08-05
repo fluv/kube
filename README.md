@@ -110,6 +110,9 @@ namespace and scrapes personal (non-cluster) metrics. Current scrapers:
   service.
 - **Outdoor weather** — temperature, relative humidity, dew point, and absolute
   humidity from the Open-Meteo API (no hardware required), updated every 5 minutes.
+- **Haverland radiators** — temperature, setpoint, wattage, duty, and
+  window-open state from the four Eco-Rad radiators via the Helki cloud API,
+  scraped from the in-cluster `haverland-exporter` service.
 
 ## Claude bot infrastructure
 
