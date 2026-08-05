@@ -114,10 +114,15 @@ runcmd:
   #   storage.k3s.fluv.net/durable=true — allowlist for longhorn-disk-tagger. Only nodes
   #     carrying this label receive the tagger pod and have their disks tagged 'durable'.
   #     Fail-closed: unlabelled nodes (pi, saraneth, future SD-backed nodes) are excluded.
+  #
+  # INSTALL_K3S_VERSION pins new nodes to the control-plane version. Unpinned, each node
+  # installs "latest at provision time" and drifts from the control planes, recreating the
+  # KubeVersionMismatch skew from #791. Bump this alongside any control-plane upgrade.
   - >
     curl -sfL https://get.k3s.io |
     K3S_URL=https://saraneth.gentoo-mine.ts.net:6443
     K3S_TOKEN=__K3S_TOKEN__
+    INSTALL_K3S_VERSION=v1.36.2+k3s1
     sh -s - agent
     --kubelet-arg=provider-id=hcloud://$(curl -sf http://169.254.169.254/hetzner/v1/metadata/instance-id)
     --node-ip=$(tailscale ip -4)
