@@ -16,7 +16,10 @@ spec:
     helm:
       valuesObject:
         image:
-          tag: v1.33.4
+          # Keep in step with the control-plane k3s minor: this pin drifted to
+          # v1.33.4 and was three minors behind by Aug 2026 (fluv/kube#797).
+          # Bump it alongside any control-plane upgrade — latest CA patch wins.
+          tag: v1.36.1
         cloudProvider: hetzner
         autoscalingGroups: # hard quota enforced on hetzner side of 5 servers
           - name: hetz-4gb-nbg1 # included in case hel1 is oversubscribed
