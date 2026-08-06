@@ -1,0 +1,32 @@
+# longhorn_volume_robustness numeric encoding: 0=unknown, 1=healthy, 2=degraded, 3=faulted
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-volume-health
+  namespace: longhorn-system
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: longhorn-volume-health
+      rules:
+        - alert: LonghornVolumeDegraded
+          expr: |
+            longhorn_volume_robustness == 2
+          for: 30m
+          labels:
+            severity: warning
+            component: longhorn-volume-health
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc }} is degraded"
+            description: "Volume {{ $labels.volume }} ({{ $labels.pvc }} in {{ $labels.pvc_namespace }}) has been degraded for over 30 minutes: it is below its replica count and one disk failure away from data loss. It is still serving data. Check replica scheduling: kubectl get volumes.longhorn.io -n longhorn-system"
+        - alert: LonghornVolumeFaulted
+          expr: |
+            longhorn_volume_robustness == 3
+          for: 5m
+          labels:
+            severity: critical
+            component: longhorn-volume-health
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc }} is faulted"
+            description: "Volume {{ $labels.volume }} ({{ $labels.pvc }} in {{ $labels.pvc_namespace }}) is faulted — data is at immediate risk. Act now: kubectl get volumes.longhorn.io -n longhorn-system and inspect the volume's replicas and engine state."
