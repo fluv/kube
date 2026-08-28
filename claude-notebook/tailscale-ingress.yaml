@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notebook-ts
+  namespace: claude-notebook
+  annotations:
+    tailscale.com/hostname: notebook
+    tailscale.com/proxy-class: spread-across-nodes
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - notebook
+  rules:
+    - host: notebook
+      http:
+        paths:
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: notebook
+                port:
+                  name: http

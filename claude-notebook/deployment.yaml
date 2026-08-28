@@ -15,9 +15,10 @@ spec:
   # Do not raise `replicas` or switch the strategy to RollingUpdate
   # without first redesigning the storage layer.
   #
-  # Scaled to zero: Claude usage paused (#748). Restore with `git revert`.
-  # The notebook-data PVC is retained; only the pod stops.
-  replicas: 0
+  # Scaled to zero Jul 2026 while Claude usage paused (#749). Restored Aug
+  # 2026: notebook now serves Open WebUI MCP over tailscale. Only this
+  # service of the #749 set; the rest stay paused.
+  replicas: 1
   strategy:
     type: Recreate
   selector:
