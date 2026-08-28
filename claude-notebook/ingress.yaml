@@ -16,7 +16,12 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 spec:
-  ingressClassName: nginx
+  # Suspended Aug 2026: notebook serves Open WebUI MCP over tailscale
+  # (tailscale-ingress.yaml); the public endpoint is unused. Revert class
+  # to `nginx` to re-enable — but the TLS renewal is broken (cert expired
+  # 2026-08-26, renewal stuck since 2026-08-11, see #814) and must be
+  # fixed first.
+  ingressClassName: disabled
   rules:
     - host: notebook.mcp.k3s.fluv.net
       http:
