@@ -1,0 +1,41 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cert-manager
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: cert-manager
+      rules:
+        - alert: CertManagerCertificateExpiring
+          expr: |
+            certmanager_certificate_expiration_timestamp_seconds - time() < 14 * 24 * 3600
+          for: 10m
+          labels:
+            severity: warning
+            component: cert-manager
+          annotations:
+            summary: "Certificate {{ $labels.name }} in {{ $labels.namespace }} expires in under 14 days"
+            description: >-
+              The certificate {{ $labels.name }} in namespace {{ $labels.namespace }}
+              expires in less than 14 days and has not been renewed. cert-manager retries
+              renewal on a backoff, but a stuck challenge means it cannot complete. Check
+              the Order/Challenge for this certificate. This is the alert that would have
+              caught the August 2026 renewal outage (fluv/kube#814) as it started, rather
+              than after certs had already expired.
+        - alert: CertManagerCertificateExpired
+          expr: |
+            certmanager_certificate_expiration_timestamp_seconds - time() < 0
+          for: 10m
+          labels:
+            severity: critical
+            component: cert-manager
+          annotations:
+            summary: "Certificate {{ $labels.name }} in {{ $labels.namespace }} has EXPIRED"
+            description: >-
+              The certificate {{ $labels.name }} in namespace {{ $labels.namespace }} is
+              already past its notAfter date. Any service served by this certificate will
+              fail TLS validation. Investigate the renewal immediately — see fluv/kube#814
+              for the port-80 root cause of the August 2026 outage.
