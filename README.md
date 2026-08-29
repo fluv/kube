@@ -98,8 +98,8 @@ namespace and scrapes personal (non-cluster) metrics. Current scrapers:
 
 - **Awair Element air quality** — three Awair Element monitors (bedroom, lounge,
   study) polled via their local HTTP API, exposing CO₂, VOC, PM2.5, temperature,
-  humidity, and the Awair score. The exporter runs with `hostNetwork: true` on
-  the Pi to reach devices on the home LAN.
+  humidity, and the Awair score. The exporter runs on the Pi, which has native
+  access to the home LAN (192.168.1.0/24) via Tailscale.
 - **Grocy** — home inventory and meal-planning metrics from the `claude-grocy`
   namespace.
 - **LG TV** — power state, input, volume, and picture-settings metrics from
