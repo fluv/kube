@@ -19,6 +19,12 @@ spec:
           enabled: true
         global:
           priorityClassName: cluster-critical
+        prometheus:
+          enabled: true
+          servicemonitor:
+            enabled: true
+          podmonitor:
+            enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
