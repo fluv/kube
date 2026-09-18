@@ -31,6 +31,15 @@ spec:
     path: '.'
     helm:
       valuesObject:
+        # The three Deployments carry a stale preferred nodeAffinity for
+        # pi.home.arpa, left by the client-side apply of 2026-04-25. Argo's
+        # desired state has no affinity, but a merge cannot drop a field that is
+        # absent from its last-applied set, so a full sync, a rollout and server-
+        # side apply all left it in place. This makes the apply a wholesale
+        # overwrite, which drops it. Scoped to Deployments via deploymentAnnotations;
+        # the same option on a Service would try to rewrite clusterIP. See #739.
+        deploymentAnnotations:
+          argocd.argoproj.io/sync-options: Replace=true
         priorityClassName: cluster-critical
         mastodon:
           local_domain: zuzakistan.com
