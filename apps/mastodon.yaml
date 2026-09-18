@@ -103,3 +103,11 @@ spec:
           auth:
             existingSecret: mastodon-redis
   project: mastodon
+  # The three Deployments carry a stale preferred nodeAffinity for pi.home.arpa
+  # that a client-side apply will not strip: the field is absent from Argo's
+  # last-applied set, so the three-way merge treats it as another manager's and
+  # leaves it. A full sync plus a rollout on 2026-09-18 left it untouched.
+  # Server-side apply makes field ownership explicit and removes it. See #739.
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
