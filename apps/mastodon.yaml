@@ -27,7 +27,11 @@ spec:
     server: https://kubernetes.default.svc
   source:
     repoURL: https://github.com/mastodon/chart.git
-    targetRevision: HEAD
+    # Pinned at the revision the cluster is running: chart 6.8.5, app v4.5.9.
+    # HEAD currently renders chart 6.10.2 / app v4.7.2, and mastodon.hooks.dbPrepare
+    # is disabled below, so a HEAD sync would upgrade the image without running the
+    # schema migration. Bump deliberately, with the migration handled.
+    targetRevision: 0d9e9e384ece0086e0d2eb16a009bacd7cccc389
     path: '.'
     helm:
       valuesObject:
