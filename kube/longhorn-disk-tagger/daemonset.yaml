@@ -27,7 +27,7 @@ spec:
                     values: ["true"]
       containers:
         - name: tagger
-          image: docker.io/bitnami/kubectl@sha256:95de17e6eb92da83a58c90a9df0c4cede634f898d2e6b92ea04f4a6ee6ace08d
+          image: docker.io/bitnami/kubectl@sha256:ab90e1058e5a658cc94b4e7eb6d48e5758cfd6d77b5dd1869513aec3a3054673
           command: [sh, -c]
           args:
             - |
