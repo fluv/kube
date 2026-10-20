@@ -45,6 +45,11 @@ spec:
               - name: 'null'
           alertmanagerSpec:
             priorityClassName: cluster-low
+            # The Longhorn CSI node plugin runs only on control-plane nodes
+            # (systemManagedComponentsNodeSelector). Alertmanager's PVC is
+            # Longhorn-backed, so it must not schedule to a burst node.
+            nodeSelector:
+              node-role.kubernetes.io/control-plane: "true"
             resources:
               requests:
                 cpu: 10m
