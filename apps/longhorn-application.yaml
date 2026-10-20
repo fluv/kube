@@ -7,13 +7,16 @@ metadata:
     argocd.argoproj.io/sync-wave: "-20"
 spec:
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
   project: default
   sources:
     - chart: longhorn
       repoURL: https://charts.longhorn.io/
-      targetRevision: 1.12.*
+      targetRevision: 1.11.*
       helm:
         valuesObject:
           preUpgradeChecker:
