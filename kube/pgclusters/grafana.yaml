@@ -23,5 +23,10 @@ spec:
   smartShutdownTimeout: 30
   monitoring:
     enablePodMonitor: true
+  # The primary refuses to start on CNPG's WAL free-space guard. The hcloud
+  # volume below the PVC floors at 10Gi, so the 1Gi request could not give the
+  # filesystem enough room for WAL plus data. 12Gi clears the floor, forces a
+  # real CSI resize, and leaves roughly 10Gi free for a sub-1Gi database.
+  # See #841.
   storage:
-    size: 1Gi
+    size: 12Gi
