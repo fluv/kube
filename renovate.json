@@ -23,6 +23,11 @@
       "allowedVersions": "<1.44"
     },
     {
+      "description": "Longhorn upgrades one minor at a time (issue #834). The 1.10.2 -> 1.12.1 skip crashlooped longhorn-manager for 13 days, and cross-minor hops are unsupported with no downgrade path. The cluster is on v1.11.3 with the manager healthy; the next supported step is 1.12.x. Raise this cap to <1.14 only after the cluster reports v1.12.x and the manager is ready.",
+      "matchPackageNames": ["longhorn"],
+      "allowedVersions": "<1.13"
+    },
+    {
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["renovate", "major-upgrade"]
