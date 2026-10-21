@@ -19,3 +19,19 @@ spec:
           annotations:
             summary: "Longhorn backup target {{ $labels.name }} is unavailable"
             description: "The Longhorn backup target {{ $labels.name }} in {{ $labels.namespace }} has been unavailable for over 15 minutes. Backups cannot reach the remote store. Check the condition: kubectl get backuptarget {{ $labels.name }} -n longhorn-system -o jsonpath='{.status.conditions}'"
+    - name: longhorn-manager
+      rules:
+        - alert: LonghornManagerNotReady
+          expr: |
+            kube_daemonset_status_number_ready{namespace="longhorn-system", daemonset="longhorn-manager"}
+              <
+            kube_daemonset_status_desired_number_scheduled{namespace="longhorn-system", daemonset="longhorn-manager"}
+              and
+            kube_daemonset_status_desired_number_scheduled{namespace="longhorn-system", daemonset="longhorn-manager"} > 0
+          for: 15m
+          labels:
+            severity: critical
+            component: longhorn-manager
+          annotations:
+            summary: "Longhorn manager has no ready replicas"
+            description: "{{ $value }} ready longhorn-manager replicas for over 15 minutes. While the manager is down, longhorn-backend has no endpoints and every Longhorn volume is unattachable, so volume-health alerts go absent rather than firing. Check: kubectl -n longhorn-system get ds longhorn-manager; kubectl -n longhorn-system logs -l app=longhorn-manager --tail=50"
