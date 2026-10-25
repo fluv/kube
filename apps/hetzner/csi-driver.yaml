@@ -15,50 +15,73 @@ spec:
     chart: hcloud-csi
     helm:
       valuesObject:
-        priorityClassName: system-cluster-critical
-        resources:
-          csiAttacher:
-            limits:
-              memory: 80Mi
-              cpu: 50m
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          csiResizer:
-            limits:
-              memory: 80Mi
-              cpu: 50m
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          csiProvisioner:
-            limits:
-              memory: 80Mi
-              cpu: 50m
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          livenessProbe:
-            limits:
-              memory: 80Mi
-              cpu: 50m
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          hcloudCSIDriver:
-            limits:
-              memory: 80Mi
-              cpu: 100m
-            requests:
-              memory: 40Mi
-              cpu: 10m
         storageClasses: []
         controller:
+          priorityClassName: system-cluster-critical
           nodeSelector:
             instance.hetzner.cloud/provided-by: cloud
+          resources:
+            csiAttacher:
+              limits:
+                memory: 80Mi
+                cpu: 50m
+              requests:
+                memory: 20Mi
+                cpu: 10m
+            csiResizer:
+              limits:
+                memory: 80Mi
+                cpu: 50m
+              requests:
+                memory: 20Mi
+                cpu: 10m
+            csiProvisioner:
+              limits:
+                memory: 80Mi
+                cpu: 50m
+              requests:
+                memory: 20Mi
+                cpu: 10m
+            livenessProbe:
+              limits:
+                memory: 80Mi
+                cpu: 50m
+              requests:
+                memory: 20Mi
+                cpu: 10m
+            hcloudCSIDriver:
+              limits:
+                memory: 80Mi
+                cpu: 100m
+              requests:
+                memory: 40Mi
+                cpu: 10m
         node:
+          priorityClassName: system-cluster-critical
           nodeSelector:
             instance.hetzner.cloud/provided-by: cloud
+          resources:
+            csiNodeDriverRegistrar:
+              limits:
+                memory: 80Mi
+                cpu: 50m
+              requests:
+                memory: 20Mi
+                cpu: 10m
+            livenessProbe:
+              limits:
+                memory: 80Mi
+                cpu: 50m
+              requests:
+                memory: 20Mi
+                cpu: 10m
+            hcloudCSIDriver:
+              limits:
+                memory: 80Mi
+                cpu: 100m
+              requests:
+                memory: 40Mi
+                cpu: 10m
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
