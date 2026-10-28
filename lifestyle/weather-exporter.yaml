@@ -154,7 +154,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: weather-exporter
-          image: python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151
+          image: python:3.14-slim@sha256:cd89c30eda26ee911a4611b18680086e0ea42e6f5f8cbe653d07fa7958c9cec8
           command: [python3, /scripts/weather-exporter.py]
           ports:
             - name: metrics
