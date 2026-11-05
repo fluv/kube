@@ -184,7 +184,7 @@ spec:
     spec:
       initContainers:
         - name: pip-install
-          image: python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151
+          image: python:3.15-slim@sha256:e97b88e416c3c01eb427b21fd8cd3ebf006e6ee38afcfcc3cae1c54ee2ab0a75
           command:
             - pip
             - install
@@ -197,7 +197,7 @@ spec:
               mountPath: /pip-packages
       containers:
         - name: github-exporter
-          image: python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151
+          image: python:3.15-slim@sha256:e97b88e416c3c01eb427b21fd8cd3ebf006e6ee38afcfcc3cae1c54ee2ab0a75
           command: [python3, /scripts/github-exporter.py]
           ports:
             - name: metrics
